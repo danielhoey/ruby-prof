@@ -1863,4 +1863,6 @@ Init_ruby_prof()
     rb_define_method(cCallInfo, "self_time", prof_call_info_self_time, 0);
     rb_define_method(cCallInfo, "wait_time", prof_call_info_wait_time, 0);
     rb_define_method(cCallInfo, "line", prof_call_info_line, 0);
+
+    init_call_tree();
 }

@@ -81,8 +81,8 @@ typedef rb_event_t rb_event_flag_t;
 #include "measure_gc_runs.h"
 #include "measure_gc_time.h"
 
-static prof_measure_t (*get_measurement)() = measure_process_time;
-static double (*convert_measurement)(prof_measure_t) = convert_process_time;
+prof_measure_t (*get_measurement)() = measure_process_time;
+double (*convert_measurement)(prof_measure_t) = convert_process_time;
 
 /* ================  DataTypes  =================*/
 static VALUE mProf;
