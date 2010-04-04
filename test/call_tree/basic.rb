@@ -6,7 +6,7 @@ require 'ruby-prof'
 RubyProf::measure_mode = RubyProf::WALL_TIME
 
 
-class CallTreeTest < Test::Unit::TestCase
+class CallTreeBasicTest < Test::Unit::TestCase
   def setup
     RubyProf::call_tree_profile_on = true
   end
@@ -24,9 +24,9 @@ class CallTreeTest < Test::Unit::TestCase
     assert_equal(4, results.size)
     assert_in_delta(0.3, results.time, 0.05)
     assert_equal('method_1a', results[0].method)
-    assert_equal(CallTreeTest, results[0].klass)
+    assert_equal(CallTreeBasicTest, results[0].klass)
     assert_equal('method_1b', results[1].method)
-    assert_equal(CallTreeTest, results[1].klass)
+    assert_equal(CallTreeBasicTest, results[1].klass)
     assert_in_delta(0.1, results[0].time, 0.05)
     assert_in_delta(0.2, results[1].time, 0.05)
   end
@@ -39,7 +39,7 @@ class CallTreeTest < Test::Unit::TestCase
     assert_equal(5, results.size)
     assert_in_delta(0.3, results.time, 0.05)
     assert_equal('method_2', results[0].method)
-    assert_equal(CallTreeTest, results[0].klass)
+    assert_equal(CallTreeBasicTest, results[0].klass)
     assert_equal('method_1a', results[0][0].method)
     assert_equal('method_1b', results[0][1].method)
   end
@@ -64,7 +64,7 @@ class CallTreeTest < Test::Unit::TestCase
     assert_equal(2, results.size)
     assert_equal(1, results.call_count)
     assert_equal(2, results[0].call_count)
-    assert_equal(CallTreeTest, results[0].klass)
+    assert_equal(CallTreeBasicTest, results[0].klass)
     assert_equal('method_1a', results[0].method)
   end
 
