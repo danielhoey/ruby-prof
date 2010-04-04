@@ -51,6 +51,101 @@
 #include <stdio.h>
 #include <assert.h>
 
+
+#include "call_tree.h"
+// CALL_TREE
+static int call_tree_profile_on = 0;
+static VALUE call_tree_top_level;
+static VALUE call_tree_current_call;
+
+static void call_tree_prof_event_hook(rb_event_flag_t event, VALUE data, VALUE self, ID mid, VALUE klass)
+{
+    if (self == mProf) return; // skip any methods from the mProf 
+    if (mid == 1) return;
+    
+    /* Get current measurement*/
+    prof_measure_t now = get_measurement();
+    
+    switch (event) {
+      case RUBY_EVENT_CALL:
+      case RUBY_EVENT_C_CALL:
+      {
+          if (klass != 0) klass = (BUILTIN_TYPE(klass) == T_ICLASS ? RBASIC(klass)->klass : klass);
+
+          //remove_event_hook();
+          prof_remove_hook();
+          //if (call_tree_current_call != call_tree_top_level) 
+          {
+            call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, now);
+          }
+          //add_event_hook();
+          prof_install_hook();
+
+          break;
+      }
+      case RUBY_EVENT_RETURN:
+      case RUBY_EVENT_C_RETURN:
+      {
+          prof_remove_hook();
+          call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
+  //      if (call_tree_current_call != call_tree_top_level) 
+          {
+            prof_install_hook();
+          }
+          break;
+      }
+   }
+}
+
+static VALUE call_tree_prof_start(VALUE self)
+{
+    call_tree_top_level = call_tree_create_root();
+    prof_measure_t now = get_measurement();
+    call_tree_top_level = call_tree_method_start(call_tree_top_level, Qnil, Qnil, now);
+    call_tree_current_call = call_tree_top_level;
+}
+
+static VALUE call_tree_prof_stop(VALUE self)
+{
+    prof_measure_t now = get_measurement();
+    while (call_tree_current_call != call_tree_top_level)
+    {
+       call_tree_current_call = call_tree_method_stop(call_tree_current_call, (get_measurement()));
+    }
+    call_tree_method_stop(call_tree_top_level, (get_measurement()));
+    return call_tree_top_level;
+}
+
+/* call-seq:
+   call_tree_profile_on -> boolean
+   
+   Returns whether ruby-prof is recording the full call tree information */
+static VALUE
+prof_get_call_tree_profile_on(VALUE self)
+{
+   if (call_tree_profile_on) { return Qtrue; }
+   else                      { return Qfalse;}
+}
+
+/* call-seq:
+   call_tree_profile_on -> boolean
+   
+   Returns whether ruby-prof is recording the full call tree information */
+static VALUE
+prof_set_call_tree_profile_on(VALUE self, VALUE val)
+{
+    if (threads_tbl)
+    {
+      rb_raise(rb_eRuntimeError, "can't set call_tree_profile while profiling");
+    }
+
+    call_tree_profile_on = RTEST(val);
+    return val;
+}
+
+
+
+
 /* ================  Helper Functions  =================*/
 static VALUE
 figure_singleton_name(VALUE klass)
@@ -1038,6 +1133,12 @@ static void
 prof_event_hook(rb_event_flag_t event, NODE *node, VALUE self, ID mid, VALUE klass)
 #endif
 {
+    if (call_tree_profile_on) 
+    {
+       call_tree_prof_event_hook(event, node, self, mid, klass);
+       return;
+    }
+
     VALUE thread = Qnil;
     VALUE thread_id = Qnil;
     prof_measure_t now = 0;
@@ -1488,15 +1589,21 @@ prof_running(VALUE self)
 static VALUE
 prof_start(VALUE self)
 {
-    if (threads_tbl != NULL)
+    if (call_tree_profile_on)
     {
-        rb_raise(rb_eRuntimeError, "RubyProf.start was already called");
+      call_tree_prof_start(self);
     }
+    else 
+    {
+      if (threads_tbl != NULL)
+      {
+          rb_raise(rb_eRuntimeError, "RubyProf.start was already called");
+      }
 
-    /* Setup globals */
-    last_thread_data = NULL;
-    threads_tbl = threads_table_create();
-
+      /* Setup globals */
+      last_thread_data = NULL;
+      threads_tbl = threads_table_create();
+    }
     prof_install_hook();              
     return self;
 }    
@@ -1548,22 +1655,29 @@ prof_resume(VALUE self)
 static VALUE
 prof_stop(VALUE self)
 {
-    VALUE result = Qnil;
-    
     prof_remove_hook();
 
-    prof_pop_threads();
+    if (call_tree_profile_on) 
+    {
+      return call_tree_prof_stop(self);
+    }
+    else
+    {
+      VALUE result = Qnil;
 
-    /* Create the result */
-    result = prof_result_new();
+      prof_pop_threads();
 
-    /* Unset the last_thread_data (very important!) 
-       and the threads table */
-    last_thread_data = NULL;
-    threads_table_free(threads_tbl);
-    threads_tbl = NULL;
+      /* Create the result */
+      result = prof_result_new();
 
-    return result;
+      /* Unset the last_thread_data (very important!) 
+         and the threads table */
+      last_thread_data = NULL;
+      threads_table_free(threads_tbl);
+      threads_tbl = NULL;
+
+      return result;
+    }
 }
 
 /* call-seq:
@@ -1670,6 +1784,11 @@ Init_ruby_prof()
     rb_define_singleton_method(mProf, "exclude_threads=", prof_set_exclude_threads, 1);
     rb_define_singleton_method(mProf, "measure_mode", prof_get_measure_mode, 0);
     rb_define_singleton_method(mProf, "measure_mode=", prof_set_measure_mode, 1);
+
+    // CALL_TREE
+    rb_define_singleton_method(mProf, "call_tree_profile_on", prof_get_call_tree_profile_on, 0);
+    rb_define_singleton_method(mProf, "call_tree_profile_on=", prof_set_call_tree_profile_on, 1);
+
 
     rb_define_const(mProf, "CLOCKS_PER_SEC", INT2NUM(CLOCKS_PER_SEC));
     rb_define_const(mProf, "PROCESS_TIME", INT2NUM(MEASURE_PROCESS_TIME));

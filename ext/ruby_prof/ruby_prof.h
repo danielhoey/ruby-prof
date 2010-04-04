@@ -72,12 +72,7 @@ typedef rb_event_t rb_event_flag_t;
 
 
 /* ================  Measurement  =================*/
-#ifdef HAVE_LONG_LONG
-typedef unsigned LONG_LONG prof_measure_t; // long long is 8 bytes on 32-bit
-#else
-typedef unsigned long prof_measure_t;
-#endif
-
+#include "measurement.h"
 #include "measure_process_time.h"
 #include "measure_wall_time.h"
 #include "measure_cpu_time.h"
