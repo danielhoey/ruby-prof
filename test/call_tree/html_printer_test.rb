@@ -4,7 +4,7 @@ require 'ruby-prof'
 require 'test/call_tree/stub_call_tree'
 require 'lib/call_tree/html_printer'
 require 'rexml/document'
-require 'rubygems'; require 'ruby-debug';
+#require 'rubygems'; require 'ruby-debug';
 
 class CallTreeHtmlPrintersTest < Test::Unit::TestCase
   def test_printer
