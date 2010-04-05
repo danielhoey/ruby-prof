@@ -1,22 +1,14 @@
-module RubyProf
-  class CallTreeTextPrinter
-    def initialize(call_tree, min_percentage=0)
-      @call_tree = call_tree
-      @min_percentage = min_percentage.to_f
-    end
+require 'lib/call_tree/abstract_printer'
 
+module RubyProf
+  class CallTreeTextPrinter < CallTreeAbstractPrinter
     def print(io)
       io << "<main>\n"
-      print_methods(io, @call_tree.children)
+      super(io) 
     end
 
     def print_methods(io, methods, parent_time=nil)
-      io = IndentedIo.new(io, 2)
-      methods.sort_by{|m| m.time}.reverse.each do |method|
-        io << format_method(method)
-        next if parent_time and method.time < parent_time * @min_percentage / 100
-        print_methods(io, method.children, method.time)
-      end
+      super(IndentedIo.new(io, 2), methods, parent_time)
     end
 
     def format_method(method)
