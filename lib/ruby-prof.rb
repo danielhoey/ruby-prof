@@ -17,6 +17,9 @@ require "ruby-prof/graph_html_printer"
 require "ruby-prof/call_tree_printer"
 require "ruby-prof/symbol_to_proc" # for 1.8's benefit
 #require "ruby-prof/result"
+require "ruby-prof/call_tree/abstract_printer"
+require "ruby-prof/call_tree/text_printer"
+require "ruby-prof/call_tree/html_printer"
 
 module RubyProf
   # See if the user specified the clock mode via 

@@ -1,7 +1,6 @@
 $: <<  "#{File.dirname(__FILE__)}/../lib"
 require 'test/unit'
 require 'ruby-prof'
-require 'lib/call_tree/text_printer'
 
 class CallTreeTextPrintersTest < Test::Unit::TestCase
   def test_text_printer

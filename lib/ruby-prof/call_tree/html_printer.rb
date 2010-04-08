@@ -1,4 +1,3 @@
-require 'lib/call_tree/abstract_printer'
 require 'erb'
 require 'rexml/document'
 

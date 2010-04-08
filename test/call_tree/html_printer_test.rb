@@ -2,7 +2,6 @@ $: <<  "#{File.dirname(__FILE__)}/../lib"
 require 'test/unit'
 require 'ruby-prof'
 require 'test/call_tree/stub_call_tree'
-require 'lib/call_tree/html_printer'
 require 'rexml/document'
 #require 'rubygems'; require 'ruby-debug';
 
