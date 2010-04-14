@@ -68,6 +68,7 @@
 	
 	      return callTree;
       }();
+
       times = {};
       
       $(document).ready(function(){
@@ -81,6 +82,9 @@
   </head>
 
   <body>
+	<div id="controls">
+		<span>Time: <input type="text" maxlength="3" onchange="CallTree.filter(parseInt(this.value))"/>
+    </div>
     <%= @result %>
   </body>
 </html>
