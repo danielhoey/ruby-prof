@@ -33,6 +33,8 @@ module RubyProf
         result << erb.result(binding)
       end
     
+      return result
+      
       @insignificant_method_calls = method_calls - significant_method_calls
       unless @insignificant_method_calls.empty?
         erb = ERB.new(insignificant_calls_template, nil, nil)
