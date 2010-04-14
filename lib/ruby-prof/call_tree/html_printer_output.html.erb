@@ -1,0 +1,86 @@
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <title>Ruby-Prof Results</title>
+    <style type="text/css" media="screen">
+      .call_tree_node {
+        margin-left: 10px;
+        padding-top: 2px;
+        padding-bottom: 1px;
+      }
+      
+      .leaf {
+        color: #333333;
+      }
+      
+      .hide_child_nodes > .call_tree_node {
+        display: none;
+      }
+      
+      .nodes_not_shown {
+        visibility: hidden;
+      }
+      
+      .hide_child_nodes > .nodes_not_shown {
+        visibility: visible;
+      }
+      
+      .insignificant_calls > .nodes_not_shown {
+        visibility: visible;
+      }
+     
+     .show_insignificant_calls > .nodes_not_shown {
+        visibility: hidden;
+      }
+
+     .filter {
+	   display: none;
+     }
+    </style>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"> </script>
+   
+    <script type="text/javascript">
+      CallTree = function(){
+	 	   var callTree = {
+	        click: function(node, event) {
+	          $(node).toggleClass('hide_child_nodes');
+	          event.stopPropagation();
+	          return false;
+	          $(node).children().toggleClass('red');
+
+	          $(node).slideToggle();
+	        },
+
+	        filter: function(time) {
+		      for (i=1; i<=time; i++) {
+		        $.each(times[i], function(){ $(this).addClass('filter') });
+	          }
+	
+	          for (i=time+1; i<=filterValue; i++) {
+		        $.each(times[i], function(){ $(this).removeClass('filter') });
+	          } 
+	         
+	          filterValue = time;	
+	        }        
+	      };
+	    
+	      var filterValue = 0;
+	
+	      return callTree;
+      }();
+      times = {};
+      
+      $(document).ready(function(){
+        $('.call_tree_node').each(function(){
+	      time = this.attributes['time'].nodeValue;
+	      if (!times[time]) { times[time] = []; }
+	      times[time].push(this);
+        });
+      });
+     </script>
+  </head>
+
+  <body>
+    <%= @result %>
+  </body>
+</html>

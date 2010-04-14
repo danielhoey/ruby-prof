@@ -54,76 +54,22 @@ module RubyProf
     end
 
     def page_template
-      %Q{<html>
-           <head>
-             <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-             <title>Ruby-Prof Results</title>
-             <style type="text/css" media="screen">
-               .call_tree_node {
-                 margin-left: 10px;
-                 padding-top: 2px;
-                 padding-bottom: 1px;
-               }
-               
-               .leaf {
-                 color: #333333;
-               }
-               
-               .hide_child_nodes > .call_tree_node {
-                 display: none;
-               }
-               
-               .nodes_not_shown {
-                 visibility: hidden;
-               }
-               
-               .hide_child_nodes > .nodes_not_shown {
-                 visibility: visible;
-               }
-               
-               .insignificant_calls > .nodes_not_shown {
-                 visibility: visible;
-               }
-              
-              .show_insignificant_calls > .nodes_not_shown {
-                 visibility: hidden;
-               }
-             </style>
-             <script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"> </script>
-            
-             <script type="text/javascript">
-               CallTreeNode = {
-                 click: function(node, event) {
-                   $(node).toggleClass('hide_child_nodes');
-                   event.stopPropagation();
-                   return false;
-                   $(node).children().toggleClass('red');
-
-                   $(node).slideToggle();
-                 }
-               }
-              </script>
-           </head>
-
-           <body>
-             <%= @result %>
-           </body>
-         </html>}.strip
+     @page_template ||= File.read("#{File.dirname(__FILE__)}/html_printer_output.html.erb")
     end
 
     def node_template
-      %Q{<div class="call_tree_node" onclick="CallTreeNode.click(this, event)">#{call_summary(@method)}
+      %Q{<div class="call_tree_node" time="#{percentage(@method.time)}" onclick="CallTree.click(this, event)">#{call_summary(@method)}
            <span class="nodes_not_shown">...</span>
            <%= print_methods(@method.children, method.time) %>
          </div>}.strip
     end
 
     def leaf_template
-      %Q{<div class="call_tree_node leaf">#{call_summary(@method)}</div>}
+      %Q{<div class="call_tree_node leaf" time="#{percentage(@method.time)}">#{call_summary(@method)}</div>}
     end
     
     def insignificant_calls_template
-      %Q{<div class="hide_child_nodes" onclick="CallTreeNode.click(this, event)">            
+      %Q{<div class="hide_child_nodes" onclick="CallTree.click(this, event)">            
            <div class="nodes_not_shown">...</div>
            <% @insignificant_method_calls.each do |call| %>
              <%= print_leaf(call) %>
