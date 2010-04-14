@@ -24,4 +24,19 @@ class CallTreeHtmlPrintersTest < Test::Unit::TestCase
     assert_equal 2, doc.elements.to_a("/html/body/div/div#{ctn_xpath}/.").size
     assert_equal 1, doc.elements.to_a("/html/body/div/div#{ctn_xpath}/div#{ctn_xpath}").size
   end
+  
+  def test_html_escaping
+    call_tree = 
+      StubCallTree.create([['#<Class:Benchmark>', 'ms', 0.5, 1]])
+   
+    lines = ''
+    printer = RubyProf::CallTreeHtmlPrinter.new(call_tree)
+    printer.print(lines)
+    
+    ctn_xpath = "[@class='call_tree_node']"
+    doc = REXML::Document.new(lines).root
+    assert_equal 1, doc.elements.to_a("//*#{ctn_xpath}").size
+    assert lines =~ /Class:Benchmark/
+    assert lines =~ /#&lt;Class:Benchmark&gt;/
+  end
 end

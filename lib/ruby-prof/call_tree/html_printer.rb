@@ -1,5 +1,6 @@
 require 'erb'
 require 'rexml/document'
+require 'cgi'
 
 module RubyProf
   class CallTreeHtmlPrinter < CallTreeAbstractPrinter
@@ -14,6 +15,7 @@ module RubyProf
       
       erb = ERB.new(page_template, nil, nil)
       output = erb.result(binding)
+      File.open("#{self.class.to_s}.html", 'w+'){|f| f << output}
       REXML::Document.new(output).write(io, 2)
     end
 
@@ -64,13 +66,18 @@ module RubyProf
     end
 
     def node_template
-      %Q{<div class="call_tree_node">#{@method.klass}::#{@method.method} #{percentage(@method.time)}%
+      %Q{<div class="call_tree_node">#{call_summary(@method)}
            <%= print_methods(@method.children, method.time) %>
          </div>}.strip
     end
 
     def leaf_template
-      %Q{<div class="call_tree_node">#{@method.klass}::#{@method.method} #{percentage(@method.time)}%</div>}
+      %Q{<div class="call_tree_node">#{call_summary(@method)}</div>}
+    end
+    
+    def call_summary(call)
+      klass, method = %w(klass method).collect{|m| CGI.escapeHTML(call.send(m).to_s)}
+      "#{klass}::#{method} #{percentage(call.time)}%"
     end
   end
 end
