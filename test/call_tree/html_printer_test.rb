@@ -17,12 +17,10 @@ class CallTreeHtmlPrintersTest < Test::Unit::TestCase
     lines = ''
     printer = RubyProf::CallTreeHtmlPrinter.new(call_tree)
     printer.print(lines)
-    
-    ctn_xpath = "[@class='call_tree_node']"
+  
     doc = REXML::Document.new(lines).root
-    assert_equal 3, doc.elements.to_a("//*#{ctn_xpath}").size
-    assert_equal 2, doc.elements.to_a("/html/body/div/div#{ctn_xpath}/.").size
-    assert_equal 1, doc.elements.to_a("/html/body/div/div#{ctn_xpath}/div#{ctn_xpath}").size
+    assert_equal 1, doc.elements.to_a("//*[@class='call_tree_node']").size
+    assert_equal 2, doc.elements.to_a("//*[@class='call_tree_node leaf']/.").size
   end
   
   def test_html_escaping
@@ -33,9 +31,8 @@ class CallTreeHtmlPrintersTest < Test::Unit::TestCase
     printer = RubyProf::CallTreeHtmlPrinter.new(call_tree)
     printer.print(lines)
     
-    ctn_xpath = "[@class='call_tree_node']"
     doc = REXML::Document.new(lines).root
-    assert_equal 1, doc.elements.to_a("//*#{ctn_xpath}").size
+    assert_equal 1, doc.elements.to_a("//*[@class='call_tree_node leaf']").size
     assert lines =~ /Class:Benchmark/
     assert lines =~ /#&lt;Class:Benchmark&gt;/
   end
