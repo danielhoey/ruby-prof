@@ -173,17 +173,9 @@ VALUE call_tree_add(VALUE self, VALUE klass, ID mid)
 VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, prof_measure_t time)
 {
     if (NIL_P(self)) { return self; }
+    if (klass == cCallTree) { return self; }
 
-    //printf("method '[]' has id %d\n", rb_intern("[]"));
-    //printf("method (%d) '%s' called\n", mid, rb_id2name(mid));
-   
-    if (klass == cCallTree)
-    {
-        printf("method '%s' called on CallTree class\n", rb_id2name(mid));
-        return self;
-    }
-
-    //printf("call_tree_method_start(%s, %s, %s)\n", ValueToString(self), ValueToString(klass), rb_id2name(mid));
+    printf("call_tree_method_start(%s, %s, %s)\n", ValueToString(self), ValueToString(klass), rb_id2name(mid));
 
     VALUE method_call = call_tree_find_child(self, klass, mid);
     if (method_call == Qnil)
@@ -205,7 +197,7 @@ VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, prof_measure_t tim
 VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
 {
     if (NIL_P(self)) { return self; }
-    //printf("call_tree_method_stop(%s)\n", ValueToString(self));
+    printf("call_tree_method_stop(%s)\n", ValueToString(self));
     call_tree_t* ct = get_call_tree(self);
     prof_measure_t ct_time = ct->time;
     prof_measure_t start_time = ct->start_time;

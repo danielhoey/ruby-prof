@@ -86,10 +86,10 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, VALUE data, VALUE s
       case RUBY_EVENT_RETURN:
       case RUBY_EVENT_C_RETURN:
       {
-          prof_remove_hook();
-          call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
-  //      if (call_tree_current_call != call_tree_top_level) 
+          if (call_tree_current_call != call_tree_top_level) 
           {
+            prof_remove_hook();
+            call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
             prof_install_hook();
           }
           break;

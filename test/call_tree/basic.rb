@@ -68,6 +68,11 @@ class CallTreeBasicTest < Test::Unit::TestCase
     assert_equal('method_1a', results[0].method)
   end
 
+  def test_stop_after_root_context_finished
+    method_start
+    results = RubyProf.stop
+    assert_equal(0, results.size)
+  end
 private
   def method_1a
     sleep 0.1
@@ -88,5 +93,9 @@ private
 
   def method_exception
     raise 'error'
+  end
+
+  def method_start
+    RubyProf.start
   end
 end
