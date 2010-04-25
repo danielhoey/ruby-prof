@@ -13,7 +13,7 @@ class StubCallTree
     ct
   end
 
-  attr_reader :klass, :time, :method, :call_count
+  attr_reader :klass, :time, :method, :call_count, :file
   attr_accessor :children
 
   def initialize(klass, method, time, call_count)
@@ -21,6 +21,7 @@ class StubCallTree
     @time = time
     @call_count = call_count
     @method = method
+    @file = caller[rand(caller.size).to_i].split(':')[0]
     @children = []
   end
 

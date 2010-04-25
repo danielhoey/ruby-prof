@@ -82,7 +82,7 @@ module RubyProf
       if percentage(call.time) < 1
         "#{klass}::#{method}"
       else
-        "#{klass}::#{method} #{percentage(call.time)}%"
+        "<span class='klass_and_method'>#{klass}::#{method}</span> - <span class='percentage'>#{percentage(call.time)}%</span> <span class='extra_info'>(<span class='file'>#{call.file},</span> <span class='time'>#{(call.time*1000).to_i}ms,</span> <span class='call_count'>#{call.call_count} calls</span>)</span>"
       end
     end
   end
