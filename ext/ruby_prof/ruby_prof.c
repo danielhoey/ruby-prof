@@ -58,7 +58,7 @@ static int call_tree_profile_on = 0;
 static VALUE call_tree_top_level;
 static VALUE call_tree_current_call;
 
-static void call_tree_prof_event_hook(rb_event_flag_t event, VALUE data, VALUE self, ID mid, VALUE klass)
+static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE self, ID mid, VALUE klass)
 {
     if (self == mProf) return; // skip any methods from the mProf 
     if (mid == 1) return;
@@ -70,17 +70,14 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, VALUE data, VALUE s
       case RUBY_EVENT_CALL:
       case RUBY_EVENT_C_CALL:
       {
-          if (klass != 0) klass = (BUILTIN_TYPE(klass) == T_ICLASS ? RBASIC(klass)->klass : klass);
-
-          //remove_event_hook();
-          prof_remove_hook();
-          //if (call_tree_current_call != call_tree_top_level) 
+          if (klass != 0 && BUILTIN_TYPE(klass) == T_ICLASS)
           {
-            call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, now);
+			  klass = RBASIC(klass)->klass;
           }
-          //add_event_hook();
-          prof_install_hook();
 
+          prof_remove_hook();
+          call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, rb_sourcefile(), now);
+          prof_install_hook();
           break;
       }
       case RUBY_EVENT_RETURN:
@@ -101,7 +98,7 @@ static VALUE call_tree_prof_start(VALUE self)
 {
     call_tree_top_level = call_tree_create_root();
     prof_measure_t now = get_measurement();
-    call_tree_top_level = call_tree_method_start(call_tree_top_level, Qnil, Qnil, now);
+    call_tree_top_level = call_tree_method_start(call_tree_top_level, Qnil, Qnil, "", now);
     call_tree_current_call = call_tree_top_level;
 }
 

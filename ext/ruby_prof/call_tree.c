@@ -1,28 +1,7 @@
 #include "call_tree.h"
 #include "list.h"
-//#include "ruby_prof.h"
-
-
-
-#define MARK() printf("%d\n", __LINE__);
-
-// TODO: move this to a header file and share with ruby_prof.c (check on mac osx)
-//prof_measure_t (*get_measurement)();
-//double (*convert_measurement)(prof_measure_t);
 
 VALUE cCallTree;
-
-prof_measure_t g_create_time = 0;
-double g_find_time = 0.0;
-
-char * ValueToString(VALUE v) 
-{
-  if (NIL_P(v)) { return "nil"; }
-  //if (RTEST(rb_obj_is_instance_of(v, cCallTree))) { return "CallTree"; }
-  VALUE s = rb_funcall(v, rb_intern("to_s"), 0);
-  return StringValuePtr(s);
-}
-
 
 static VALUE method_name_text(ID mid)
 {
@@ -35,23 +14,24 @@ typedef struct call_tree_t {
     ID mid;
     VALUE klass;
     VALUE parent;
+	char* file;
     list children;
     int call_count;
     prof_measure_t start_time;
     prof_measure_t time;
 } call_tree_t;
 
-static VALUE call_tree_create(VALUE self, VALUE klass, ID mid)
+static VALUE call_tree_create(VALUE self, VALUE klass, ID mid, char* file)
 {
-    VALUE args[3] = {self, klass, mid};
-    return rb_class_new_instance(3, &args[0], cCallTree);
+    VALUE args[4] = {self, klass, mid, file};
+    return rb_class_new_instance(4, &args[0], cCallTree);
 }
 
 /* CallTreeMethod */
 /* :nodoc: */
 VALUE call_tree_create_root()
 {
-    return call_tree_create(Qnil, rb_str_new2(""), rb_str_new2(""));
+    return call_tree_create(Qnil, rb_str_new2(""), rb_str_new2(""), "");
 }
 
 static int mark(st_data_t key, st_data_t value, st_data_t data)
@@ -99,29 +79,30 @@ void init_call_tree()
 {
     cCallTree = rb_define_class("CallTree", rb_cObject);
     rb_define_alloc_func(cCallTree, call_tree_alloc);
-    rb_define_method(cCallTree, "initialize", call_tree_initialize, 3);
+    rb_define_method(cCallTree, "initialize", call_tree_initialize, 4);
     rb_define_method(cCallTree, "initialize_copy", call_tree_initialize_copy, 3);
     rb_define_method(cCallTree, "[]", call_tree_fetch, 1);
     rb_define_method(cCallTree, "size", call_tree_size, 0);
-    rb_define_method(cCallTree, "add", call_tree_add, 2);
-    rb_define_method(cCallTree, "find_child", call_tree_find_child, 2);
+//    rb_define_method(cCallTree, "add", call_tree_add, 3);
+//    rb_define_method(cCallTree, "find_child", call_tree_find_child, 3);
     rb_define_method(cCallTree, "parent", call_tree_parent, 0);
     rb_define_method(cCallTree, "children", call_tree_children, 0);
     rb_define_method(cCallTree, "method", call_tree_method, 0);
     rb_define_method(cCallTree, "klass", call_tree_klass, 0);
     rb_define_method(cCallTree, "time", call_tree_time, 0);
+    rb_define_method(cCallTree, "file", call_tree_file, 0);
     rb_define_method(cCallTree, "call_count", call_tree_call_count, 0);
-    rb_define_method(cCallTree, "method_start", call_tree_method_start, 3);
+    rb_define_method(cCallTree, "method_start", call_tree_method_start, 4);
     rb_define_method(cCallTree, "method_stop", call_tree_method_stop, 1);
 }
 
-VALUE call_tree_initialize(VALUE self, VALUE parent, VALUE klass, ID mid)
+VALUE call_tree_initialize(VALUE self, VALUE parent, VALUE klass, ID mid, char* file)
 {
-    //printf("call_tree_initialize(%s, %s, %s)\n", ValueToString(parent), ValueToString(klass), rb_id2name(mid));
     call_tree_t* ct = get_call_tree(self);
     ct->mid = mid;
     ct->klass = klass;
     ct->parent = parent;
+	ct->file = file;
     ct->time = 0;
     ct->call_count = 0;
     return self;
@@ -161,38 +142,34 @@ int call_tree_size2(VALUE self)
     return total_size; 
 }
 
-VALUE call_tree_add(VALUE self, VALUE klass, ID mid)
+VALUE call_tree_add(VALUE self, VALUE klass, ID mid, char* file)
 {
-    //printf("call_tree_add(%s, %s, %s)\n", ValueToString(self), ValueToString(klass), rb_id2name(mid));
-    VALUE child = call_tree_create(self, klass, mid);
+    VALUE child = call_tree_create(self, klass, mid, file);
     list_add(get_call_tree(self)->children, child);
     return child;
 }
 
-
-VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, prof_measure_t time)
+VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_measure_t time)
 {
     if (NIL_P(self)) { return self; }
     if (klass == cCallTree) { return self; }
 
-    //printf("call_tree_method_start(%s, %s, %s)\n", ValueToString(self), ValueToString(klass), rb_id2name(mid));
-
-    VALUE method_call = call_tree_find_child(self, klass, mid);
+    VALUE method_call = call_tree_find_child(self, klass, mid, file);
     if (method_call == Qnil)
     {
-        //printf("new node added to call tree\n");
-        method_call = call_tree_add(self, klass, mid);
+        method_call = call_tree_add(self, klass, mid, file);
     }
 
-    get_call_tree(method_call)->start_time = time;
-    get_call_tree(method_call)->call_count++;
+	call_tree_t* ct = get_call_tree(method_call);
+	ct->start_time = time;
+    ct->call_count++;
     return method_call;
 }
 
 VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
 {
     if (NIL_P(self)) { return self; }
-    //printf("call_tree_method_stop(%s)\n", ValueToString(self));
+
     call_tree_t* ct = get_call_tree(self);
     prof_measure_t ct_time = ct->time;
     prof_measure_t start_time = ct->start_time;
@@ -202,9 +179,8 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
     return ct->parent;
 }
 
-VALUE call_tree_find_child(VALUE self, VALUE klass, ID mid)
+VALUE call_tree_find_child(VALUE self, VALUE klass, ID mid, char* file)
 {
-    //printf("call_tree_find(%s, %s, %s)\n", ValueToString(self), ValueToString(klass), rb_id2name(mid));
     list children = get_call_tree(self)->children;
     int size = list_size(children);
 
@@ -213,7 +189,7 @@ VALUE call_tree_find_child(VALUE self, VALUE klass, ID mid)
     {
         VALUE child = list_get(children, i);
         call_tree_t* ct = get_call_tree(child);
-        if (klass == ct->klass && mid == ct->mid)
+        if (klass == ct->klass && mid == ct->mid && strcmp(file, ct->file) == 0)
         {
             return child;
         }
@@ -246,9 +222,7 @@ VALUE call_tree_parent(VALUE self)
     return get_call_tree(self)->parent;
 }
 
-/*
-VALUE call_tree_to_s(VALUE self)
+VALUE call_tree_file(VALUE self)
 {
-    return rb_str_new2("CallTree");
+	return rb_str_new2(get_call_tree(self)->file);
 }
-*/

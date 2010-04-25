@@ -40,6 +40,7 @@
     <script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"> </script>
    
     <script type="text/javascript">
+    //<![CDATA[
       CallTree = function(){
 	 	   var callTree = {
 	        click: function(node, event) {
@@ -78,12 +79,13 @@
 	      times[time].push(this);
         });
       });
+     //]]>
      </script>
   </head>
 
   <body>
 	<div id="controls">
-		<span>Time: <input type="text" maxlength="3" onchange="CallTree.filter(parseInt(this.value))"/>
+		<span>Time: <input type="text" maxlength="3" onchange="CallTree.filter(parseInt(this.value))"/></span>
     </div>
     <%= @result %>
   </body>

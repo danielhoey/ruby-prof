@@ -25,8 +25,10 @@ class CallTreeBasicTest < Test::Unit::TestCase
     assert_in_delta(0.3, results.time, 0.05)
     assert_equal('method_1a', results[0].method)
     assert_equal(CallTreeBasicTest, results[0].klass)
+    assert_equal(__FILE__, results[0].file)
     assert_equal('method_1b', results[1].method)
     assert_equal(CallTreeBasicTest, results[1].klass)
+    assert_equal(__FILE__, results[0].file)
     assert_in_delta(0.1, results[0].time, 0.05)
     assert_in_delta(0.2, results[1].time, 0.05)
   end
