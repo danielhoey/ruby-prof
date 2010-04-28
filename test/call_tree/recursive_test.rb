@@ -47,7 +47,7 @@ class RecursiveTest < Test::Unit::TestCase
     RubyProf::call_tree_profile_on = true
   end
 
-  def test_cycle
+  def test_simple
     results = RubyProf.profile do
       simple(2)  
     end

@@ -153,7 +153,6 @@ VALUE call_tree_add(VALUE self, VALUE klass, ID mid, char* file)
     return child;
 }
 
-
 VALUE call_tree_find_parent(VALUE self, VALUE klass, ID mid, char* file)
 {
 	if (NIL_P(self)) { return Qnil; }	
@@ -188,7 +187,10 @@ VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_m
     }
 
 	call_tree_t* ct = get_call_tree(method_call);
-	if (!is_recursive) { ct->start_time = time; }
+	if (!is_recursive) 
+	{ 
+		ct->start_time = time;
+    }
     ct->call_count++;
     return method_call;
 }
@@ -200,7 +202,7 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
 
     call_tree_t* ct = get_call_tree(self);
 
-    if (NIL_P(call_tree_find_parent(self, ct->klass, ct->mid, ct->file))) 
+    if (NIL_P(call_tree_find_parent(ct->parent, ct->klass, ct->mid, ct->file))) 
     {
         prof_measure_t ct_time = ct->time;
 	    prof_measure_t start_time = ct->start_time;

@@ -32,7 +32,6 @@ class SingletonTest < Test::Unit::TestCase
       a << :first_thing
       assert_equal(1, a.as.size)
     end
-    printer = RubyProf::CallTreeTextPrinter.new(result)
-    printer.print(STDOUT)
+    RubyProf::CallTreeTextPrinter.new(result).print('')
   end
 end
