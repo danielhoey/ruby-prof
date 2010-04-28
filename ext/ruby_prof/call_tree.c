@@ -175,6 +175,7 @@ VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_m
     if (NIL_P(self)) { return self; }
     if (klass == cCallTree) { return self; }
 
+	int is_recursive = 0;
     VALUE method_call = call_tree_find_child(self, klass, mid, file);
     if (NIL_P(method_call))
     {
@@ -183,10 +184,14 @@ VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_m
 	    {
            method_call = call_tree_add(self, klass, mid, file);
 	    }
+	    else
+	    {
+			is_recursive = 1;
+	    }
     }
 
 	call_tree_t* ct = get_call_tree(method_call);
-	ct->start_time = time;
+	if (!is_recursive) { ct->start_time = time; }
     ct->call_count++;
     return method_call;
 }
@@ -198,8 +203,7 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
 
     call_tree_t* ct = get_call_tree(self);
 
-
-   // if (NIL_P(call_tree_find_parent(self, ct->klass, ct->mid, ct->file))) 
+    if (NIL_P(call_tree_find_parent(self, ct->klass, ct->mid, ct->file))) 
     {
         prof_measure_t ct_time = ct->time;
 	    prof_measure_t start_time = ct->start_time;
