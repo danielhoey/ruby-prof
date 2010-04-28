@@ -21,6 +21,12 @@ typedef struct call_tree_t {
     prof_measure_t time;
 } call_tree_t;
 
+static int match(call_tree_t* ct, VALUE klass, ID mid, char* file)
+{
+	return (klass == ct->klass) && (mid == ct->mid) && (strcmp(file, ct->file) == 0);
+}
+
+
 static VALUE call_tree_create(VALUE self, VALUE klass, ID mid, char* file)
 {
     VALUE args[4] = {self, klass, mid, file};
@@ -83,8 +89,6 @@ void init_call_tree()
     rb_define_method(cCallTree, "initialize_copy", call_tree_initialize_copy, 3);
     rb_define_method(cCallTree, "[]", call_tree_fetch, 1);
     rb_define_method(cCallTree, "size", call_tree_size, 0);
-//    rb_define_method(cCallTree, "add", call_tree_add, 3);
-//    rb_define_method(cCallTree, "find_child", call_tree_find_child, 3);
     rb_define_method(cCallTree, "parent", call_tree_parent, 0);
     rb_define_method(cCallTree, "children", call_tree_children, 0);
     rb_define_method(cCallTree, "method", call_tree_method, 0);
@@ -149,15 +153,36 @@ VALUE call_tree_add(VALUE self, VALUE klass, ID mid, char* file)
     return child;
 }
 
+
+VALUE call_tree_find_parent(VALUE self, VALUE klass, ID mid, char* file)
+{
+	if (NIL_P(self)) { return Qnil; }	
+	call_tree_t* ct = get_call_tree(self);
+		
+    if (match(ct, klass, mid, file))
+    {
+		printf("matched parent for %s\n", rb_id2name(mid));
+        return self;
+    }
+ 
+	printf("%s didn't match %s\n", rb_id2name(ct->mid), rb_id2name(mid));
+	return call_tree_find_parent(ct->parent, klass, mid, file);
+}
+
 VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_measure_t time)
 {
+	printf("start %s\n", rb_id2name(mid));
     if (NIL_P(self)) { return self; }
     if (klass == cCallTree) { return self; }
 
     VALUE method_call = call_tree_find_child(self, klass, mid, file);
-    if (method_call == Qnil)
+    if (NIL_P(method_call))
     {
-        method_call = call_tree_add(self, klass, mid, file);
+	    method_call = call_tree_find_parent(self, klass, mid, file);
+	    if (NIL_P(method_call))
+	    {
+           method_call = call_tree_add(self, klass, mid, file);
+	    }
     }
 
 	call_tree_t* ct = get_call_tree(method_call);
@@ -166,16 +191,22 @@ VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_m
     return method_call;
 }
 
+
 VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
 {
     if (NIL_P(self)) { return self; }
 
     call_tree_t* ct = get_call_tree(self);
-    prof_measure_t ct_time = ct->time;
-    prof_measure_t start_time = ct->start_time;
-    prof_measure_t diff = time - start_time;
-    ct_time += diff;
-    ct->time = ct_time;
+
+
+   // if (NIL_P(call_tree_find_parent(self, ct->klass, ct->mid, ct->file))) 
+    {
+        prof_measure_t ct_time = ct->time;
+	    prof_measure_t start_time = ct->start_time;
+	    prof_measure_t diff = time - start_time;
+	    ct_time += diff;
+	    ct->time = ct_time;
+    }
     return ct->parent;
 }
 
@@ -189,13 +220,15 @@ VALUE call_tree_find_child(VALUE self, VALUE klass, ID mid, char* file)
     {
         VALUE child = list_get(children, i);
         call_tree_t* ct = get_call_tree(child);
-        if (klass == ct->klass && mid == ct->mid && strcmp(file, ct->file) == 0)
+        if (match(ct, klass, mid, file)) 
         {
             return child;
         }
     }
     return Qnil;
 }
+
+
 
 VALUE call_tree_method(VALUE self)
 {

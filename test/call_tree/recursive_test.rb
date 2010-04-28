@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 require 'test/unit'
 require 'ruby-prof'
+require 'rubygems'
+require 'ruby-debug'
 
 @@fib_hash = Hash.new{|h,k| h[k] = calc_fib(k)}
 def fib(n)
@@ -19,6 +21,31 @@ def basic_fib(n)
   return basic_fib(n-1) + basic_fib(n-2)
 end
 
+
+def simple(n)
+  sleep(1)
+  n -= 1
+  return if n == 0
+  simple(n)
+end
+
+def cycle(n)
+  sub_cycle(n)
+end
+
+def sub_cycle(n)
+  sleep(1)
+  n -= 1
+  return if n == 0
+  cycle(n)
+end
+
+class CallTree
+  def to_s
+    "#{klass}::#{method}"
+  end
+end
+
 class RecursiveTest < Test::Unit::TestCase
   def setup
     # Need to use wall time for this test due to the sleep calls
@@ -27,11 +54,21 @@ class RecursiveTest < Test::Unit::TestCase
   end
 
   def test_cycle
-    result = RubyProf.profile do
-      n = 10
-      puts "fib(#{n}): #{basic_fib(n)}"
+    results = RubyProf.profile do
+      simple(2)  
     end
 
-    File.open('recursive.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(result).print(f)}
+    File.open('recursive.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(results).print(f)}
+    assert_in_delta(2, results.time, 0.05)
+    assert_equal(4, results.size)
+    assert_equal(2, results[0].call_count)
+    assert_in_delta(2, results[0].time, 0.05)
+    assert_equal('simple', results[0].method)
+    assert_equal(Object, results[0].klass)
+    
+    assert_equal(2, results[0][0].call_count)
+    assert_in_delta(2, results[0][0].time, 0.05)
+    assert_equal('sleep', results[0][0].method)
+    assert_equal(Kernel, results[0][0].klass)
   end
 end
