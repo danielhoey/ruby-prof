@@ -161,17 +161,14 @@ VALUE call_tree_find_parent(VALUE self, VALUE klass, ID mid, char* file)
 		
     if (match(ct, klass, mid, file))
     {
-		printf("matched parent for %s\n", rb_id2name(mid));
         return self;
     }
  
-	printf("%s didn't match %s\n", rb_id2name(ct->mid), rb_id2name(mid));
 	return call_tree_find_parent(ct->parent, klass, mid, file);
 }
 
 VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_measure_t time)
 {
-	printf("start %s\n", rb_id2name(mid));
     if (NIL_P(self)) { return self; }
     if (klass == cCallTree) { return self; }
 

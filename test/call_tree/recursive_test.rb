@@ -40,12 +40,6 @@ def sub_cycle(n)
   cycle(n)
 end
 
-class CallTree
-  def to_s
-    "#{klass}::#{method}"
-  end
-end
-
 class RecursiveTest < Test::Unit::TestCase
   def setup
     # Need to use wall time for this test due to the sleep calls
