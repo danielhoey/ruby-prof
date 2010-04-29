@@ -2,6 +2,7 @@
 #include "list.h"
 
 VALUE cCallTree;
+int NULL_TIME = -1;
 
 static VALUE method_name_text(ID mid)
 {
@@ -170,7 +171,7 @@ VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_m
 {
     if (NIL_P(self)) { return self; }
     if (klass == cCallTree) { return self; }
-
+	
 	int is_recursive = 0;
     VALUE method_call = call_tree_find_child(self, klass, mid, file);
     if (NIL_P(method_call))
@@ -185,9 +186,13 @@ VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_m
 			is_recursive = 1;
 	    }
     }
+    else if (NIL_P(call_tree_find_parent(self, klass, mid, file)))
+    {
+        is_recursive = 1;
+    }
 
 	call_tree_t* ct = get_call_tree(method_call);
-	if (!is_recursive) 
+	if (!is_recursive || ct->start_time == NULL_TIME) 
 	{ 
 		ct->start_time = time;
     }
@@ -209,6 +214,7 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
 	    prof_measure_t diff = time - start_time;
 	    ct_time += diff;
 	    ct->time = ct_time;
+		ct->start_time = NULL_TIME;
     }
     return ct->parent;
 }

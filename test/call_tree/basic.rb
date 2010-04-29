@@ -7,13 +7,6 @@ RubyProf::measure_mode = RubyProf::WALL_TIME
 
 
 class CallTreeBasicTest < Test::Unit::TestCase
-  def setup
-    RubyProf::call_tree_profile_on = true
-  end
-
-  def teardown
-    RubyProf::call_tree_profile_on = false
-  end
 
   def test_one_level
     RubyProf.start

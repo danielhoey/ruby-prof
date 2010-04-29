@@ -54,7 +54,7 @@
 
 #include "call_tree.h"
 // CALL_TREE
-static int call_tree_profile_on = 0;
+static int call_tree_profile_on = 1;
 static VALUE call_tree_top_level;
 static VALUE call_tree_current_call;
 
@@ -65,7 +65,8 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
     
     /* Get current measurement*/
     prof_measure_t now = get_measurement();
-    
+
+    prof_remove_hook();
     switch (event) {
       case RUBY_EVENT_CALL:
       case RUBY_EVENT_C_CALL:
@@ -75,9 +76,7 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 			  klass = RBASIC(klass)->klass;
           }
 
-          prof_remove_hook();
-          call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, rb_sourcefile(), now);
-          prof_install_hook();
+          call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, rb_sourcefile(), now);       
           break;
       }
       case RUBY_EVENT_RETURN:
@@ -85,13 +84,12 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
       {
           if (call_tree_current_call != call_tree_top_level) 
           {
-            prof_remove_hook();
             call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
-            prof_install_hook();
           }
           break;
       }
    }
+   prof_install_hook();
 }
 
 static VALUE call_tree_prof_start(VALUE self)

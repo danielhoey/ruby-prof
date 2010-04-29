@@ -44,7 +44,6 @@ class RecursiveTest < Test::Unit::TestCase
   def setup
     # Need to use wall time for this test due to the sleep calls
     RubyProf::measure_mode = RubyProf::WALL_TIME
-    RubyProf::call_tree_profile_on = true
   end
 
   def test_simple
@@ -52,7 +51,6 @@ class RecursiveTest < Test::Unit::TestCase
       simple(2)  
     end
 
-    File.open('recursive.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(results).print(f)}
     assert_in_delta(2, results.time, 0.05)
     assert_equal(4, results.size)
     assert_equal(2, results[0].call_count)
@@ -64,5 +62,23 @@ class RecursiveTest < Test::Unit::TestCase
     assert_in_delta(2, results[0][0].time, 0.05)
     assert_equal('sleep', results[0][0].method)
     assert_equal(Kernel, results[0][0].klass)
+  end
+
+  def test_cycle
+    results = RubyProf.profile do
+      cycle(2)  
+    end
+
+    assert_in_delta(2, results.time, 0.05)
+    assert_equal(5, results.size)
+    assert_equal(2, results[0].call_count)
+    assert_in_delta(2, results[0].time, 0.05)
+    assert_equal('cycle', results[0].method)
+    assert_equal(Object, results[0].klass)
+
+    assert_equal(2, results[0][0].call_count)
+    assert_in_delta(2, results[0][0].time, 0.05)
+    assert_equal('sub_cycle', results[0][0].method)
+    assert_equal(Object, results[0][0].klass)
   end
 end
