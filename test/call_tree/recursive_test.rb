@@ -1,29 +1,10 @@
 #!/usr/bin/env ruby
 require 'test/unit'
 require 'ruby-prof'
-require 'rubygems'
-require 'ruby-debug'
-
-@@fib_hash = Hash.new{|h,k| h[k] = calc_fib(k)}
-def fib(n)
-  @@fib_hash[n]
-end
-
-def calc_fib(n)
-  return 0 if n == 0
-  return 1 if n == 1
-  return fib(n-1) + fib(n-2)
-end
-
-def basic_fib(n)
-  return 0 if n == 0
-  return 1 if n == 1
-  return basic_fib(n-1) + basic_fib(n-2)
-end
-
+require 'test/call_tree/common'
 
 def simple(n)
-  sleep(1)
+  sleep(0.1)
   n -= 1
   return if n == 0
   simple(n)
@@ -34,13 +15,15 @@ def cycle(n)
 end
 
 def sub_cycle(n)
-  sleep(1)
+  sleep(0.1)
   n -= 1
   return if n == 0
   cycle(n)
 end
 
 class RecursiveTest < Test::Unit::TestCase
+  include Common
+
   def setup
     # Need to use wall time for this test due to the sleep calls
     RubyProf::measure_mode = RubyProf::WALL_TIME
@@ -51,17 +34,10 @@ class RecursiveTest < Test::Unit::TestCase
       simple(2)  
     end
 
-    assert_in_delta(2, results.time, 0.05)
+    assert_in_delta(0.2, results.time, 0.05)
     assert_equal(4, results.size)
-    assert_equal(2, results[0].call_count)
-    assert_in_delta(2, results[0].time, 0.05)
-    assert_equal('simple', results[0].method)
-    assert_equal(Object, results[0].klass)
-    
-    assert_equal(2, results[0][0].call_count)
-    assert_in_delta(2, results[0][0].time, 0.05)
-    assert_equal('sleep', results[0][0].method)
-    assert_equal(Kernel, results[0][0].klass)
+    assert_profile_result(results[0], {:klass=>Object, :method=>'simple', :time=>0.2, :call_count=>2})
+    assert_profile_result(results[0][0], {:klass=>Kernel, :method=>'sleep', :time=>0.2, :call_count=>2})
   end
 
   def test_cycle
@@ -69,16 +45,9 @@ class RecursiveTest < Test::Unit::TestCase
       cycle(2)  
     end
 
-    assert_in_delta(2, results.time, 0.05)
+    assert_in_delta(0.2, results.time, 0.05)
     assert_equal(5, results.size)
-    assert_equal(2, results[0].call_count)
-    assert_in_delta(2, results[0].time, 0.05)
-    assert_equal('cycle', results[0].method)
-    assert_equal(Object, results[0].klass)
-
-    assert_equal(2, results[0][0].call_count)
-    assert_in_delta(2, results[0][0].time, 0.05)
-    assert_equal('sub_cycle', results[0][0].method)
-    assert_equal(Object, results[0][0].klass)
+    assert_profile_result(results[0], {:klass=>Object, :method=>'cycle', :time=>0.2, :call_count=>2})
+    assert_profile_result(results[0][0], {:klass=>Object, :method=>'sub_cycle', :time=>0.2, :call_count=>2})
   end
 end

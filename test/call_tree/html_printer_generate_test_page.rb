@@ -1,7 +1,8 @@
 $: <<  "#{File.dirname(__FILE__)}/../lib"
 require 'test/unit'
 require 'ruby-prof'
-require 'test/call_tree/stub_call_tree'
+require 'test/call_tree/common'
+#require 'test/call_tree/stub_call_tree'
 
 def generate_call_tree(time, max_children)
   this_time = time
@@ -22,8 +23,7 @@ def get_klass
   Module.constants[rand(Module.constants.size).to_i]
 end
 
-
-call_tree = StubCallTree.create([generate_call_tree(10.0, 7)])
+call_tree = Common::StubCallTree.create([generate_call_tree(10.0, 7)])
 
 File.open('html_printer_test.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(call_tree).print(f)}
 

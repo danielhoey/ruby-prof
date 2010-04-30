@@ -1,14 +1,13 @@
 $: <<  "#{File.dirname(__FILE__)}/../lib"
 require 'test/unit'
 require 'ruby-prof'
-require 'test/call_tree/stub_call_tree'
+require 'test/call_tree/common'
 require 'rexml/document'
-#require 'rubygems'; require 'ruby-debug';
 
 class CallTreeHtmlPrintersTest < Test::Unit::TestCase
   def test_printer
     call_tree = 
-      StubCallTree.create([
+      Common::StubCallTree.create([
         [Array, 'each', 0.5, 1, [
           [Object, 'calc', 0.25, 2]]],
         [Integer, 'to_s', 0.25, 2]
@@ -25,7 +24,7 @@ class CallTreeHtmlPrintersTest < Test::Unit::TestCase
   
   def test_html_escaping
     call_tree = 
-      StubCallTree.create([['#<Class:Benchmark>', 'ms', 0.5, 1]])
+      Common::StubCallTree.create([['#<Class:Benchmark>', 'ms', 0.5, 1]])
    
     lines = ''
     printer = RubyProf::CallTreeHtmlPrinter.new(call_tree)
