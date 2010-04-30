@@ -53,18 +53,56 @@
 
 
 #include "call_tree.h"
-// CALL_TREE
 static int call_tree_profile_on = 1;
 static VALUE call_tree_top_level;
 static VALUE call_tree_current_call;
+static st_table* threads;
+static VALUE last_thread_id = Qnil;
+static VALUE thread_id;
+
+
+static size_t store_method_against_thread(VALUE thread_id, VALUE call_tree_method)
+{
+    /* Its too slow to key on the real thread id so just typecast thread instead. */
+    return st_insert(threads, (st_data_t) thread_id, (st_data_t) call_tree_method);
+}
+
+static VALUE lookup_thread(VALUE thread_id)
+{
+    st_data_t val;
+    if (st_lookup(threads, (st_data_t) thread_id, &val))
+    {
+        return (VALUE) val;
+    }
+    
+    return Qnil;
+}
+
 
 static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE self, ID mid, VALUE klass)
 {
     if (self == mProf) return; // skip any methods from the mProf 
     if (mid == 1) return;
+
+    prof_measure_t now = get_measurement();  // Get current measurement    
+    thread_id = rb_obj_id(rb_thread_current()); // Get the current thread information.
     
-    /* Get current measurement*/
-    prof_measure_t now = get_measurement();
+   # ifdef RUBY_VM
+     /* ensure that new threads are hooked [sigh] (bug in core) */
+     // just do this on a context switch?
+     prof_remove_hook();
+     prof_install_hook();
+   # endif  
+
+    /* Was there a context switch? */
+	VALUE call_tree_switched_call = Qnil;
+	int call_tree_new_thread = 0;
+    if (!last_thread_id || last_thread_id != thread_id) // TODO: just last_thread_id != thread_id??
+    {
+		call_tree_switched_call = lookup_thread(thread_id);
+		call_tree_new_thread = NIL_P(call_tree_switched_call);
+		last_thread_id = thread_id;
+    }
 
     prof_remove_hook();
     switch (event) {
@@ -76,12 +114,30 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 			  klass = RBASIC(klass)->klass;
           }
 
-          call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, rb_sourcefile(), now);       
+          if (call_tree_switched_call) 
+		  {
+			// TODO:
+			// call_tree_method_pause(call_tree_current_call, now);
+			// call_tree_method_resume(call_tree_switched_call, now);
+		  }
+		  else if (call_tree_new_thread)
+		  {
+		     // get last thread creation method
+			//call_tree_current_call = last_thread_creation_call;	
+		  }
+
+          call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, rb_sourcefile(), now);
           break;
       }
       case RUBY_EVENT_RETURN:
       case RUBY_EVENT_C_RETURN:
       {
+	      
+          if (call_tree_switched_call) 
+		  {
+			  //call_tree_current_call = call_tree_switched_call;
+		  }
+		
           if (call_tree_current_call != call_tree_top_level) 
           {
             call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
@@ -89,11 +145,13 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
           break;
       }
    }
+   store_method_against_thread(thread_id, call_tree_current_call);      
    prof_install_hook();
 }
 
 static VALUE call_tree_prof_start(VALUE self)
 {
+	threads = st_init_numtable();
     call_tree_top_level = call_tree_create_root();
     prof_measure_t now = get_measurement();
     call_tree_top_level = call_tree_method_start(call_tree_top_level, Qnil, Qnil, "", now);
@@ -108,6 +166,9 @@ static VALUE call_tree_prof_stop(VALUE self)
        call_tree_current_call = call_tree_method_stop(call_tree_current_call, (get_measurement()));
     }
     call_tree_method_stop(call_tree_top_level, (get_measurement()));
+
+    st_free_table(threads);
+
     return call_tree_top_level;
 }
 
