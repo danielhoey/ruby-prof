@@ -57,8 +57,9 @@ static int call_tree_profile_on = 1;
 static VALUE call_tree_top_level;
 static VALUE call_tree_current_call;
 static st_table* threads;
-static VALUE last_thread_id = Qnil;
-static VALUE thread_id;
+static VALUE call_tree_last_thread_id = Qnil;
+static VALUE thread;
+static VALUE call_tree_thread_id;
 
 
 static size_t store_method_against_thread(VALUE thread_id, VALUE call_tree_method)
@@ -85,7 +86,10 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
     if (mid == 1) return;
 
     prof_measure_t now = get_measurement();  // Get current measurement    
-    thread_id = rb_obj_id(rb_thread_current()); // Get the current thread information.
+	VALUE call_tree_thread = rb_thread_current();
+	call_tree_thread_id = rb_obj_id(call_tree_thread);
+
+ // Get the current thread information.
     
    # ifdef RUBY_VM
      /* ensure that new threads are hooked [sigh] (bug in core) */
@@ -97,15 +101,43 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
     /* Was there a context switch? */
 	VALUE call_tree_switched_call = Qnil;
 	int call_tree_new_thread = 0;
-    if (!last_thread_id || last_thread_id != thread_id) // TODO: just last_thread_id != thread_id??
-    {
-		call_tree_switched_call = lookup_thread(thread_id);
+//    if (!NIL_P(last_thread) && RTEST(rb_funcall(last_thread, rb_intern("=="), 1, thread))) // TODO: just last_thread_id != thread_id??
+  if (call_tree_last_thread_id != call_tree_thread_id)  
+  {
+	//printf("thread changed\n");
+		call_tree_switched_call = lookup_thread(call_tree_thread_id);
 		call_tree_new_thread = NIL_P(call_tree_switched_call);
-		last_thread_id = thread_id;
+		//printf("new thread? %d, switched thread? %d\n", call_tree_new_thread, !NIL_P(call_tree_switched_call));
+		call_tree_last_thread_id = call_tree_thread_id;
     }
+
+
+	  if (!NIL_P(call_tree_switched_call)) 
+	  {
+					printf("switch thread\n");
+		// TODO:
+		// call_tree_method_pause(call_tree_current_call, now);
+		// call_tree_method_resume(call_tree_switched_call, now);
+	  }
+	  else if (call_tree_new_thread)
+	  {
+		printf("new thread\n");
+	     // get last thread creation method
+		//call_tree_current_call = last_thread_creation_call;	
+	  }
 
     prof_remove_hook();
     switch (event) {
+	  case RUBY_EVENT_LINE:
+	  {
+		if (call_tree_new_thread)
+		{
+			char thread_id_str[32];
+			sprintf(thread_id_str, "%2u", (unsigned int) call_tree_thread_id);
+		    call_tree_current_call = call_tree_method_start(call_tree_current_call, "<thread>", thread_id_str, rb_sourcefile(), now);
+		}
+		break;	
+	  }
       case RUBY_EVENT_CALL:
       case RUBY_EVENT_C_CALL:
       {
@@ -114,30 +146,12 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 			  klass = RBASIC(klass)->klass;
           }
 
-          if (call_tree_switched_call) 
-		  {
-			// TODO:
-			// call_tree_method_pause(call_tree_current_call, now);
-			// call_tree_method_resume(call_tree_switched_call, now);
-		  }
-		  else if (call_tree_new_thread)
-		  {
-		     // get last thread creation method
-			//call_tree_current_call = last_thread_creation_call;	
-		  }
-
           call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, rb_sourcefile(), now);
           break;
       }
       case RUBY_EVENT_RETURN:
       case RUBY_EVENT_C_RETURN:
-      {
-	      
-          if (call_tree_switched_call) 
-		  {
-			  //call_tree_current_call = call_tree_switched_call;
-		  }
-		
+      {   	
           if (call_tree_current_call != call_tree_top_level) 
           {
             call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
@@ -145,7 +159,7 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
           break;
       }
    }
-   store_method_against_thread(thread_id, call_tree_current_call);      
+   store_method_against_thread(call_tree_thread_id, call_tree_current_call);      
    prof_install_hook();
 }
 
@@ -999,7 +1013,7 @@ collect_threads(st_data_t key, st_data_t value, st_data_t result)
     return ST_CONTINUE;
 }
 
-
+#define DEBUG
 /* ================  Profiling    =================*/
 /* Copied from eval.c */
 #ifdef DEBUG
@@ -1171,8 +1185,10 @@ prof_pop_threads()
 {
     /* Get current measurement */
     prof_measure_t now = get_measurement();
-    st_foreach(threads_tbl, pop_frames, (st_data_t) &now);
+    st_foreach(threads_tbl,  pop_frames, (st_data_t) &now);
 }
+
+
 
 
 #ifdef RUBY_VM
@@ -1189,12 +1205,7 @@ static void
 prof_event_hook(rb_event_flag_t event, NODE *node, VALUE self, ID mid, VALUE klass)
 #endif
 {
-    if (call_tree_profile_on) 
-    {
-       call_tree_prof_event_hook(event, node, self, mid, klass);
-       return;
-    }
-
+    
     VALUE thread = Qnil;
     VALUE thread_id = Qnil;
     prof_measure_t now = 0;
@@ -1225,7 +1236,7 @@ prof_event_hook(rb_event_flag_t event, NODE *node, VALUE self, ID mid, VALUE kla
         const char* source_file = rb_sourcefile();
         unsigned int source_line = rb_sourceline();
 
-        char* event_name = get_event_name(event);
+		char* event_name = get_event_name(event);
 
         if (klass != 0)
           klass = (BUILTIN_TYPE(klass) == T_ICLASS ? RBASIC(klass)->klass : klass);
@@ -1242,7 +1253,12 @@ prof_event_hook(rb_event_flag_t event, NODE *node, VALUE self, ID mid, VALUE kla
         last_thread_id = thread_id;               
     }
 #endif
-    
+    if (call_tree_profile_on) 
+    {
+       call_tree_prof_event_hook(event, node, self, mid, klass);
+       return;
+    }
+	
     /* Special case - skip any methods from the mProf 
        module, such as Prof.stop, since they clutter
        the results but aren't important to them results. */
