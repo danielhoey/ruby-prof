@@ -41,6 +41,7 @@ VALUE call_tree_create_root()
     return call_tree_create(Qnil, rb_str_new2(""), rb_str_new2(""), "");
 }
 
+
 static int mark(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_gc_mark(value);
@@ -80,6 +81,15 @@ get_call_tree(VALUE c_call_tree)
     call_tree_t* ct;
     Data_Get_Struct(c_call_tree, call_tree_t, ct);
     return ct;
+}
+
+
+VALUE call_tree_create_thread(VALUE parent, VALUE thread_id, char* file, prof_measure_t time)
+{
+    VALUE thread = call_tree_create(parent, rb_str_new2(""), rb_str_new2(""), file);
+	get_call_tree(thread)->start_time = time;
+	printf("RTEST(thread): %d", RTEST(thread));
+	return thread;
 }
 
 void init_call_tree()

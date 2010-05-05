@@ -101,20 +101,17 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
     /* Was there a context switch? */
 	VALUE call_tree_switched_call = Qnil;
 	int call_tree_new_thread = 0;
-//    if (!NIL_P(last_thread) && RTEST(rb_funcall(last_thread, rb_intern("=="), 1, thread))) // TODO: just last_thread_id != thread_id??
-  if (call_tree_last_thread_id != call_tree_thread_id)  
-  {
-	//printf("thread changed\n");
+  
+    if (call_tree_last_thread_id != call_tree_thread_id)  
+    {
 		call_tree_switched_call = lookup_thread(call_tree_thread_id);
 		call_tree_new_thread = NIL_P(call_tree_switched_call);
-		//printf("new thread? %d, switched thread? %d\n", call_tree_new_thread, !NIL_P(call_tree_switched_call));
 		call_tree_last_thread_id = call_tree_thread_id;
-    }
-
+     }
 
 	  if (!NIL_P(call_tree_switched_call)) 
 	  {
-					printf("switch thread\n");
+	    printf("switch thread\n");
 		// TODO:
 		// call_tree_method_pause(call_tree_current_call, now);
 		// call_tree_method_resume(call_tree_switched_call, now);
@@ -133,8 +130,9 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 		if (call_tree_new_thread)
 		{
 			char thread_id_str[32];
-			sprintf(thread_id_str, "%2u", (unsigned int) call_tree_thread_id);
-		    call_tree_current_call = call_tree_method_start(call_tree_current_call, "<thread>", thread_id_str, rb_sourcefile(), now);
+			sprintf(thread_id_str, "<thread::%2u>", (unsigned int) call_tree_thread_id);
+			printf("%s\n", thread_id_str);
+		    call_tree_current_call = call_tree_create_thread(call_tree_current_call, call_tree_thread_id, rb_sourcefile(), now);
 		}
 		break;	
 	  }
@@ -169,7 +167,7 @@ static VALUE call_tree_prof_start(VALUE self)
     call_tree_top_level = call_tree_create_root();
     prof_measure_t now = get_measurement();
     call_tree_top_level = call_tree_method_start(call_tree_top_level, Qnil, Qnil, "", now);
-    call_tree_current_call = call_tree_top_level;
+	call_tree_current_call = call_tree_top_level;
 }
 
 static VALUE call_tree_prof_stop(VALUE self)
@@ -177,9 +175,9 @@ static VALUE call_tree_prof_stop(VALUE self)
     prof_measure_t now = get_measurement();
     while (call_tree_current_call != call_tree_top_level)
     {
-       call_tree_current_call = call_tree_method_stop(call_tree_current_call, (get_measurement()));
+       call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
     }
-    call_tree_method_stop(call_tree_top_level, (get_measurement()));
+    call_tree_method_stop(call_tree_top_level, now);
 
     st_free_table(threads);
 

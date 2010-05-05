@@ -2,28 +2,28 @@
 require 'test/unit'
 require 'ruby-prof'
 require 'timeout'
+require 'test/call_tree/common'
+require 'rubygems'; require 'ruby-debug'
 
-# --  Tests ----
 class ThreadTest < Test::Unit::TestCase
+  include Common
+ 
   def setup
     # Need to use wall time for this test due to the sleep calls
     RubyProf::measure_mode = RubyProf::WALL_TIME
   end
 
-  def test_thread_timings
+  def test_threads_in_call_tree
   	RubyProf.start    
     thread = Thread.new do
-      sleep 0 # force it to hit thread.join, below, first
-      # thus forcing sleep(1), below, to be counted as (wall) self_time
-      # since we currently count time "in some other thread" as self.wait_time
-      # for whatever reason
-      sleep(0.1)
-    end
-    sleep(0.2)
+       method_a
+     end
+    method_b
     thread.join
     
     results = RubyProf.stop
-    return 
+    File.open('threads.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(results).print(f)}
+    assert_profile_result(results[0], :klass=>Class, :method=>'new', :call_count=>1, :time=>0.1, :file=>__FILE__)
  end
   
   def test_thread
@@ -38,5 +38,14 @@ class ThreadTest < Test::Unit::TestCase
       rescue Timeout::Error
       end
     end
+  end
+  
+  private
+  def method_a
+    sleep 0.1
+  end
+  
+  def method_b
+    sleep 0.2
   end
 end

@@ -1,6 +1,12 @@
 require 'rubygems'
 require 'ruby-debug' rescue puts "ruby-debug not installed"
 
+class CallTree
+  def to_s
+    "#{klass}::#{method}"# (#{children.size} children)"
+  end
+end
+
 module Common
   def assert_profile_result(result, expected_values)
     expected_values.each do |key, value|

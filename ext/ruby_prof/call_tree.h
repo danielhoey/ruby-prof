@@ -7,6 +7,7 @@
 
 void init_call_tree();
 VALUE call_tree_create_root();
+VALUE call_tree_create_thread(VALUE parent, VALUE thread_id, char* file, prof_measure_t time);
 
 VALUE call_tree_initialize(VALUE self, VALUE parent, VALUE klass, VALUE method, char* file);
 VALUE call_tree_initialize_copy(VALUE copy, VALUE original);
