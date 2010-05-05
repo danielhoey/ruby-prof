@@ -2,6 +2,7 @@
 #include "list.h"
 
 VALUE cCallTree;
+static ID call_tree_class_id;
 int NULL_TIME = -1;
 
 static VALUE method_name_text(ID mid)
@@ -11,9 +12,16 @@ static VALUE method_name_text(ID mid)
     else            return rb_str_new2(name);
 }
 
+static VALUE class_name_text(ID mid)
+{
+    char* name = rb_id2name(mid);
+    if (name == NULL) return rb_str_new2("[No class]");
+    else            return rb_str_new2(name);
+}
+
 typedef struct call_tree_t {
     ID mid;
-    VALUE klass;
+    ID klass;
     VALUE parent;
 	char* file;
     list children;
@@ -22,13 +30,13 @@ typedef struct call_tree_t {
     prof_measure_t time;
 } call_tree_t;
 
-static int match(call_tree_t* ct, VALUE klass, ID mid, char* file)
+static int match(call_tree_t* ct, ID klass, ID mid, char* file)
 {
 	return (klass == ct->klass) && (mid == ct->mid) && (strcmp(file, ct->file) == 0);
 }
 
 
-static VALUE call_tree_create(VALUE self, VALUE klass, ID mid, char* file)
+static VALUE call_tree_create(VALUE self, ID klass, ID mid, char* file)
 {
     VALUE args[4] = {self, klass, mid, file};
     return rb_class_new_instance(4, &args[0], cCallTree);
@@ -67,7 +75,7 @@ static void call_tree_free(call_tree_t* ct)
     xfree(ct);
 }
 
-static VALUE call_tree_alloc(VALUE klass)
+static VALUE call_tree_alloc(ID klass)
 {
     call_tree_t* call_tree_stuct;
     call_tree_stuct = ALLOC(call_tree_t);
@@ -95,6 +103,7 @@ VALUE call_tree_create_thread(VALUE parent, VALUE thread_id, char* file, prof_me
 void init_call_tree()
 {
     cCallTree = rb_define_class("CallTree", rb_cObject);
+    call_tree_class_id = rb_intern("CallTree");
     rb_define_alloc_func(cCallTree, call_tree_alloc);
     rb_define_method(cCallTree, "initialize", call_tree_initialize, 4);
     rb_define_method(cCallTree, "initialize_copy", call_tree_initialize_copy, 3);
@@ -111,7 +120,7 @@ void init_call_tree()
     rb_define_method(cCallTree, "method_stop", call_tree_method_stop, 1);
 }
 
-VALUE call_tree_initialize(VALUE self, VALUE parent, VALUE klass, ID mid, char* file)
+VALUE call_tree_initialize(VALUE self, VALUE parent, ID klass, ID mid, char* file)
 {
     call_tree_t* ct = get_call_tree(self);
     ct->mid = mid;
@@ -157,14 +166,14 @@ int call_tree_size2(VALUE self)
     return total_size; 
 }
 
-VALUE call_tree_add(VALUE self, VALUE klass, ID mid, char* file)
+VALUE call_tree_add(VALUE self, ID klass, ID mid, char* file)
 {
     VALUE child = call_tree_create(self, klass, mid, file);
     list_add(get_call_tree(self)->children, child);
     return child;
 }
 
-VALUE call_tree_find_parent(VALUE self, VALUE klass, ID mid, char* file)
+VALUE call_tree_find_parent(VALUE self, ID klass, ID mid, char* file)
 {
 	if (NIL_P(self)) { return Qnil; }	
 	call_tree_t* ct = get_call_tree(self);
@@ -177,10 +186,15 @@ VALUE call_tree_find_parent(VALUE self, VALUE klass, ID mid, char* file)
 	return call_tree_find_parent(ct->parent, klass, mid, file);
 }
 
-VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_measure_t time)
+
+VALUE call_tree_method_start(VALUE self, VALUE klass_string, ID mid, char* file, prof_measure_t time)
 {
     if (NIL_P(self)) { return self; }
-    if (klass == cCallTree) { return self; }
+	printf("%d\n", __LINE__);
+	char* klass_text = StringValuePtr(klass_string);
+		printf("%d\n", __LINE__);
+	ID klass = rb_intern(klass_text);
+    if (klass == call_tree_class_id) { return self; }
 	
 	int is_recursive = 0;
     VALUE method_call = call_tree_find_child(self, klass, mid, file);
@@ -229,7 +243,7 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
     return ct->parent;
 }
 
-VALUE call_tree_find_child(VALUE self, VALUE klass, ID mid, char* file)
+VALUE call_tree_find_child(VALUE self, ID klass, ID mid, char* file)
 {
     list children = get_call_tree(self)->children;
     int size = list_size(children);
@@ -256,7 +270,7 @@ VALUE call_tree_method(VALUE self)
 
 VALUE call_tree_klass(VALUE self)
 {
-    return get_call_tree(self)->klass;
+    return class_name_text(get_call_tree(self)->klass);
 }
 
 VALUE call_tree_time(VALUE self)

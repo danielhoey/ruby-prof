@@ -9,14 +9,14 @@ void init_call_tree();
 VALUE call_tree_create_root();
 VALUE call_tree_create_thread(VALUE parent, VALUE thread_id, char* file, prof_measure_t time);
 
-VALUE call_tree_initialize(VALUE self, VALUE parent, VALUE klass, VALUE method, char* file);
+VALUE call_tree_initialize(VALUE self, VALUE parent, VALUE klass_text, VALUE method, char* file);
 VALUE call_tree_initialize_copy(VALUE copy, VALUE original);
 VALUE call_tree_children(VALUE self);
 VALUE call_tree_fetch(VALUE self, VALUE index);
-VALUE call_tree_add(VALUE self, VALUE klass, ID mid, char* file);
+VALUE call_tree_add(VALUE self, ID klass, ID mid, char* file);
 VALUE call_tree_size(VALUE self);
-VALUE call_tree_find_child(VALUE self, VALUE klass, ID mid, char* file);
-VALUE call_tree_method_start(VALUE self, VALUE klass, ID mid, char* file, prof_measure_t time);
+VALUE call_tree_find_child(VALUE self, ID klass, ID mid, char* file);
+VALUE call_tree_method_start(VALUE self, VALUE klass_text, ID mid, char* file, prof_measure_t time);
 VALUE call_tree_method_stop(VALUE self, prof_measure_t time);
 VALUE call_tree_to_s(VALUE self);
 

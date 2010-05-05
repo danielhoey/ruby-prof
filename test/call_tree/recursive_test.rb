@@ -37,8 +37,8 @@ class RecursiveTest < Test::Unit::TestCase
 
     assert_in_delta(0.2, results.time, 0.05)
     assert_equal(4, results.size)
-    assert_profile_result(results[0], {:klass=>Object, :method=>'simple', :time=>0.2, :call_count=>2})
-    assert_profile_result(results[0][0], {:klass=>Kernel, :method=>'sleep', :time=>0.2, :call_count=>2})
+    assert_profile_result(results[0], {:klass=>"Object", :method=>'simple', :time=>0.2, :call_count=>2})
+    assert_profile_result(results[0][0], {:klass=>"Kernel", :method=>'sleep', :time=>0.2, :call_count=>2})
   end
 
   def test_cycle
@@ -48,7 +48,7 @@ class RecursiveTest < Test::Unit::TestCase
 
     assert_in_delta(0.2, results.time, 0.05)
     assert_equal(5, results.size)
-    assert_profile_result(results[0], {:klass=>Object, :method=>'cycle', :time=>0.2, :call_count=>2})
-    assert_profile_result(results[0][0], {:klass=>Object, :method=>'sub_cycle', :time=>0.2, :call_count=>2})
+    assert_profile_result(results[0], {:klass=>"Object", :method=>'cycle', :time=>0.2, :call_count=>2})
+    assert_profile_result(results[0][0], {:klass=>"Object", :method=>'sub_cycle', :time=>0.2, :call_count=>2})
   end
 end

@@ -171,7 +171,7 @@ static VALUE call_tree_prof_start(VALUE self)
 	call_tree_last_thread_id = call_tree_thread_id;    
     call_tree_top_level = call_tree_create_root();
     prof_measure_t now = get_measurement();
-    call_tree_top_level = call_tree_method_start(call_tree_top_level, Qnil, Qnil, "", now);
+    call_tree_top_level = call_tree_method_start(call_tree_top_level, rb_str_new2(""), rb_str_new2(""), "", now);
 	call_tree_current_call = call_tree_top_level;
 }
 
