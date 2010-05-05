@@ -22,8 +22,7 @@ class ThreadTest < Test::Unit::TestCase
     thread.join
     
     results = RubyProf.stop
-    File.open('threads.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(results).print(f)}
-    assert_profile_result(results[0], :klass=>Class, :method=>'new', :call_count=>1, :time=>0.1, :file=>__FILE__)
+    assert_profile_result(results[0], :klass=>"<Class::Thread>", :method=>'new', :call_count=>1, :time=>0.1, :file=>__FILE__)
  end
   
   def test_thread

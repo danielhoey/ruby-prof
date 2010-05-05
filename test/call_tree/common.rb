@@ -8,6 +8,11 @@ class CallTree
 end
 
 module Common
+  
+  def dump_to_html(results)
+    File.open('results.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(results).print(f)}
+  end
+  
   def assert_profile_result(result, expected_values)
     expected_values.each do |key, value|
       check(result, key, value)

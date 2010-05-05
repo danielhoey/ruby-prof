@@ -17,8 +17,8 @@ class CallTreeBasicTest < Test::Unit::TestCase
     
     assert_equal(4, results.size)
     assert_in_delta(0.3, results.time, 0.05)
-    assert_profile_result(results[0], :klass=>CallTreeBasicTest, :method=>'method_1a', :call_count=>1, :time=>0.1, :file=>__FILE__)
-    assert_profile_result(results[1], :klass=>CallTreeBasicTest, :method=>'method_1b', :call_count=>1, :time=>0.2, :file=>__FILE__)
+    assert_profile_result(results[0], :klass=>"CallTreeBasicTest", :method=>'method_1a', :call_count=>1, :time=>0.1, :file=>__FILE__)
+    assert_profile_result(results[1], :klass=>"CallTreeBasicTest", :method=>'method_1b', :call_count=>1, :time=>0.2, :file=>__FILE__)
   end
 
   def test_two_levels
@@ -49,10 +49,11 @@ class CallTreeBasicTest < Test::Unit::TestCase
       method_1a
     results = RubyProf.stop
 
+    dump_to_html(results)
     assert_in_delta(0.2, results.time, 0.05)
     assert_equal(2, results.size)
     assert_equal(1, results.call_count)
-    assert_profile_result(results[0], :klass=>CallTreeBasicTest, :method=>'method_1a', :call_count=>2)
+    assert_profile_result(results[0], :klass=>"CallTreeBasicTest", :method=>'method_1a', :call_count=>2)
   end
 
   def test_stop_after_root_context_finished

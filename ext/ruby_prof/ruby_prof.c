@@ -61,6 +61,7 @@ static VALUE call_tree_last_thread_id = Qnil;
 static VALUE thread;
 static VALUE call_tree_thread_id;
 
+static VALUE klass_name(VALUE klass);
 
 static size_t store_method_against_thread(VALUE thread_id, VALUE call_tree_method)
 {
@@ -144,7 +145,7 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 			  klass = RBASIC(klass)->klass;
           }
 
-          call_tree_current_call = call_tree_method_start(call_tree_current_call, klass, mid, rb_sourcefile(), now);
+          call_tree_current_call = call_tree_method_start(call_tree_current_call, klass_name(klass), mid, rb_sourcefile(), now);
           break;
       }
       case RUBY_EVENT_RETURN:
@@ -164,6 +165,10 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 static VALUE call_tree_prof_start(VALUE self)
 {
 	threads = st_init_numtable();
+	VALUE call_tree_thread = rb_thread_current();
+	call_tree_thread_id = rb_obj_id(call_tree_thread);
+	store_method_against_thread(call_tree_thread_id, call_tree_current_call);
+	call_tree_last_thread_id = call_tree_thread_id;    
     call_tree_top_level = call_tree_create_root();
     prof_measure_t now = get_measurement();
     call_tree_top_level = call_tree_method_start(call_tree_top_level, Qnil, Qnil, "", now);
