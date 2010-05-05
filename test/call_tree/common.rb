@@ -10,7 +10,7 @@ end
 module Common
   
   def dump_to_html(results)
-    File.open('results.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(results).print(f)}
+    File.open('results.html', 'w+'){|f| RubyProf::CallTreeHtmlPrinter.new(results, 0).print(f)}
   end
   
   def assert_profile_result(result, expected_values)

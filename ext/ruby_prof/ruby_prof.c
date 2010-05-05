@@ -131,9 +131,9 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 		if (call_tree_new_thread)
 		{
 			char thread_id_str[32];
-			sprintf(thread_id_str, "<thread::%2u>", (unsigned int) call_tree_thread_id);
-			printf("%s\n", thread_id_str);
-		    call_tree_current_call = call_tree_create_thread(call_tree_current_call, call_tree_thread_id, rb_sourcefile(), now);
+			sprintf(thread_id_str, "%2u", (unsigned int) call_tree_thread_id);
+			printf("[thread]::%s\n", thread_id_str);
+		    call_tree_current_call = call_tree_create_thread(call_tree_current_call, thread_id_str, rb_sourcefile(), now);
 		}
 		break;	
 	  }

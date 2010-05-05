@@ -19,6 +19,7 @@ static VALUE class_name_text(ID mid)
     else            return rb_str_new2(name);
 }
 
+
 typedef struct call_tree_t {
     ID mid;
     ID klass;
@@ -30,9 +31,17 @@ typedef struct call_tree_t {
     prof_measure_t time;
 } call_tree_t;
 
+void print_transition(call_tree_t* ct1, call_tree_t* ct2)
+{
+  	printf("%s::%s -> %s::%s\n", rb_id2name(ct1->klass), rb_id2name(ct1->mid), rb_id2name(ct2->klass), rb_id2name(ct2->mid));	
+}
+
+
 static int match(call_tree_t* ct, ID klass, ID mid, char* file)
 {
-	return (klass == ct->klass) && (mid == ct->mid) && (strcmp(file, ct->file) == 0);
+	int match_class_and_mid = (klass == ct->klass) && (mid == ct->mid);
+	if (file) return match_class_and_mid && (strcmp(file, ct->file) == 0);
+	else      return match_class_and_mid;
 }
 
 
@@ -83,8 +92,7 @@ static VALUE call_tree_alloc(ID klass)
     return Data_Wrap_Struct(klass, call_tree_mark, call_tree_free, call_tree_stuct);
 }
 
-static call_tree_t* 
-get_call_tree(VALUE c_call_tree)
+static call_tree_t* get_call_tree(VALUE c_call_tree)
 {
     call_tree_t* ct;
     Data_Get_Struct(c_call_tree, call_tree_t, ct);
@@ -92,13 +100,6 @@ get_call_tree(VALUE c_call_tree)
 }
 
 
-VALUE call_tree_create_thread(VALUE parent, VALUE thread_id, char* file, prof_measure_t time)
-{
-    VALUE thread = call_tree_create(parent, rb_str_new2(""), rb_str_new2(""), file);
-	get_call_tree(thread)->start_time = time;
-	printf("RTEST(thread): %d", RTEST(thread));
-	return thread;
-}
 
 void init_call_tree()
 {
@@ -145,7 +146,12 @@ VALUE call_tree_children(VALUE self)
 
 VALUE call_tree_fetch(VALUE self, VALUE index)
 {
-    return list_get(get_call_tree(self)->children, NUM2INT(index));
+	list children = get_call_tree(self)->children;
+	int i = NUM2INT(index);
+	
+	if (i >= list_size(children)) { return Qnil; }
+	
+    return list_get(children, i);
 }
 
 VALUE call_tree_size(VALUE self)
@@ -187,13 +193,16 @@ VALUE call_tree_find_parent(VALUE self, ID klass, ID mid, char* file)
 }
 
 
+VALUE call_tree_create_thread(VALUE current, char* thread_id, char* file, prof_measure_t time)
+{
+	VALUE thread_new = call_tree_find_parent(current, rb_intern("<Class::Thread>"), rb_intern("new"), NULL);
+    return call_tree_method_start(call_tree_parent(thread_new), rb_str_new2("[thread]"), rb_intern(thread_id), file, time);
+}
+
 VALUE call_tree_method_start(VALUE self, VALUE klass_string, ID mid, char* file, prof_measure_t time)
 {
     if (NIL_P(self)) { return self; }
-	printf("%d\n", __LINE__);
-	char* klass_text = StringValuePtr(klass_string);
-		printf("%d\n", __LINE__);
-	ID klass = rb_intern(klass_text);
+	ID klass = rb_intern(StringValuePtr(klass_string));
     if (klass == call_tree_class_id) { return self; }
 	
 	int is_recursive = 0;
@@ -215,7 +224,12 @@ VALUE call_tree_method_start(VALUE self, VALUE klass_string, ID mid, char* file,
         is_recursive = 1;
     }
 
+
 	call_tree_t* ct = get_call_tree(method_call);
+	
+	print_transition(get_call_tree(self), ct);
+	
+	
 	if (!is_recursive || ct->start_time == NULL_TIME) 
 	{ 
 		ct->start_time = time;

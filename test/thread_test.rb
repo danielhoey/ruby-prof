@@ -22,7 +22,15 @@ class ThreadTest < Test::Unit::TestCase
     thread.join
     
     results = RubyProf.stop
-    assert_profile_result(results[0], :klass=>"<Class::Thread>", :method=>'new', :call_count=>1, :time=>0.1, :file=>__FILE__)
+    dump_to_html(results)
+    debugger
+    assert_equal(8, results.size)
+    assert_profile_result(results[0], :klass=>"<Class::Thread>", :method=>'new', :call_count=>1, 
+      #:time=>0.1, 
+      :file=>__FILE__)
+    assert_profile_result(results[1], :klass=>"[thread]", :call_count=>1, 
+      #:time=>0.1, 
+      :file=>__FILE__)
  end
   
   def test_thread

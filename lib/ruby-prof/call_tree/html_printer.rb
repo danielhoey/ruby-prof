@@ -22,7 +22,7 @@ module RubyProf
     def print_methods(method_calls, parent_time)
       result = ''
       
-      significant_method_calls = method_calls.find_all{|call| call.time >= (parent_time * @min_percentage.to_f / 100) and percentage(call.time) >= 1}
+      significant_method_calls = method_calls.find_all{|call| call.time >= (parent_time * @min_percentage.to_f / 100) and percentage(call.time) >= @min_percentage/2}
       significant_method_calls.sort_by{|m| m.time}.reverse.each do |method|
         @method = method
         if method.children.empty? 
