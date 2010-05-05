@@ -1,5 +1,6 @@
 #include "call_tree.h"
 #include "list.h"
+#include <assert.h>
 
 VALUE cCallTree;
 static ID call_tree_class_id;
@@ -197,6 +198,27 @@ VALUE call_tree_create_thread(VALUE current, char* thread_id, char* file, prof_m
 {
 	VALUE thread_new = call_tree_find_parent(current, rb_intern("<Class::Thread>"), rb_intern("new"), NULL);
     return call_tree_method_start(call_tree_parent(thread_new), rb_str_new2("[thread]"), rb_intern(thread_id), file, time);
+}
+
+void call_tree_method_pause(VALUE self, prof_measure_t time)
+{
+	call_tree_t* ct = get_call_tree(self);
+	printf("pause %s::%s at %d\n", rb_id2name(ct->klass), rb_id2name(ct->mid), time);	
+	
+	prof_measure_t ct_time = ct->time;
+    prof_measure_t start_time = ct->start_time;
+    prof_measure_t diff = time - start_time;
+    ct_time += diff;
+    ct->time = ct_time;
+	ct->start_time = NULL_TIME;
+}
+
+void call_tree_method_resume(VALUE self, prof_measure_t time)
+{
+	call_tree_t* ct = get_call_tree(self);
+	printf("resume %s::%s at %d\n", rb_id2name(ct->klass), rb_id2name(ct->mid), time);	
+	assert(ct->start_time == NULL_TIME);
+	ct->start_time = time;	
 }
 
 VALUE call_tree_method_start(VALUE self, VALUE klass_string, ID mid, char* file, prof_measure_t time)

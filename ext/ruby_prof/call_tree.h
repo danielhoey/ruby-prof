@@ -18,6 +18,8 @@ VALUE call_tree_size(VALUE self);
 VALUE call_tree_find_child(VALUE self, ID klass, ID mid, char* file);
 VALUE call_tree_method_start(VALUE self, VALUE klass_text, ID mid, char* file, prof_measure_t time);
 VALUE call_tree_method_stop(VALUE self, prof_measure_t time);
+void call_tree_method_pause(VALUE self, prof_measure_t time);
+void call_tree_method_resume(VALUE self, prof_measure_t time);
 VALUE call_tree_to_s(VALUE self);
 
 VALUE call_tree_parent(VALUE self);

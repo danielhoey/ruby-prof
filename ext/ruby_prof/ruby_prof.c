@@ -81,6 +81,7 @@ static VALUE lookup_thread(VALUE thread_id)
 }
 
 
+
 static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE self, ID mid, VALUE klass)
 {
     if (self == mProf) return; // skip any methods from the mProf 
@@ -113,30 +114,22 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 	  if (!NIL_P(call_tree_switched_call)) 
 	  {
 	    printf("switch thread\n");
-		// TODO:
-		// call_tree_method_pause(call_tree_current_call, now);
-		// call_tree_method_resume(call_tree_switched_call, now);
+		call_tree_method_pause(call_tree_current_call, now);
+		call_tree_method_resume(call_tree_switched_call, now);
+		call_tree_current_call = call_tree_switched_call;
 	  }
 	  else if (call_tree_new_thread)
 	  {
 		printf("new thread\n");
-	     // get last thread creation method
-		//call_tree_current_call = last_thread_creation_call;	
+		call_tree_method_pause(call_tree_current_call, now);
+	    char thread_id_str[32];
+		sprintf(thread_id_str, "%2u", (unsigned int) call_tree_thread_id);
+		printf("[thread]::%s\n", thread_id_str);
+	    call_tree_current_call = call_tree_create_thread(call_tree_current_call, thread_id_str, rb_sourcefile(), now);
 	  }
 
     prof_remove_hook();
     switch (event) {
-	  case RUBY_EVENT_LINE:
-	  {
-		if (call_tree_new_thread)
-		{
-			char thread_id_str[32];
-			sprintf(thread_id_str, "%2u", (unsigned int) call_tree_thread_id);
-			printf("[thread]::%s\n", thread_id_str);
-		    call_tree_current_call = call_tree_create_thread(call_tree_current_call, thread_id_str, rb_sourcefile(), now);
-		}
-		break;	
-	  }
       case RUBY_EVENT_CALL:
       case RUBY_EVENT_C_CALL:
       {
@@ -175,19 +168,29 @@ static VALUE call_tree_prof_start(VALUE self)
 	call_tree_current_call = call_tree_top_level;
 }
 
+
+static int stop_thread(st_data_t key, st_data_t value, st_data_t now_arg)
+{
+    VALUE thread_id = (VALUE)key;
+    VALUE call_tree_method = (VALUE) value;
+    prof_measure_t now = *(prof_measure_t*) now_arg;
+
+    while (call_tree_method != call_tree_top_level)
+    {
+       call_tree_method = call_tree_method_stop(call_tree_method, now);
+    } 
+    return 0;
+}
+
 static VALUE call_tree_prof_stop(VALUE self)
 {
     prof_measure_t now = get_measurement();
-    while (call_tree_current_call != call_tree_top_level)
-    {
-       call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
-    }
+    st_foreach(threads,  stop_thread, (st_data_t) &now);
     call_tree_method_stop(call_tree_top_level, now);
-
     st_free_table(threads);
-
     return call_tree_top_level;
 }
+
 
 /* call-seq:
    call_tree_profile_on -> boolean
@@ -1016,7 +1019,7 @@ collect_threads(st_data_t key, st_data_t value, st_data_t result)
     return ST_CONTINUE;
 }
 
-#define DEBUG
+
 /* ================  Profiling    =================*/
 /* Copied from eval.c */
 #ifdef DEBUG
