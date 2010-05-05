@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+$: <<  "#{File.dirname(__FILE__)}/../lib"
 require 'test/unit'
 require 'ruby-prof'
 require 'test/call_tree/common'

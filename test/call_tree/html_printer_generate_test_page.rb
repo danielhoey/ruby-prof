@@ -2,7 +2,6 @@ $: <<  "#{File.dirname(__FILE__)}/../lib"
 require 'test/unit'
 require 'ruby-prof'
 require 'test/call_tree/common'
-#require 'test/call_tree/stub_call_tree'
 
 def generate_call_tree(time, max_children)
   this_time = time

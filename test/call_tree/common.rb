@@ -1,3 +1,5 @@
+require 'rubygems'
+require 'ruby-debug' rescue puts "ruby-debug not installed"
 
 module Common
   def assert_profile_result(result, expected_values)
