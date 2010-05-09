@@ -218,7 +218,7 @@ void update_time(call_tree_t* ct, prof_measure_t time)
     ct_time += diff;
     ct->time = ct_time;
 	  ct->start_time = NULL_TIME;
-		printf("update time %s::%s %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) ct->time);	
+		printf("%s::%s time: %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) ct->time);	
 }
 
 int thread_root(call_tree_t* ct)
@@ -239,7 +239,7 @@ void call_tree_method_pause(VALUE self, prof_measure_t time)
 	{	
 		call_tree_t* ct = get_call_tree(method);
 	  if (sleep_method(ct)) break;
-		printf("pause %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+		printf("%s::%s pause at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
     if (thread_root(ct) && ct->start_time == NULL_TIME) break;
     assert(ct->start_time != NULL_TIME);
 		update_time(ct, time);
@@ -257,7 +257,7 @@ void call_tree_method_resume(VALUE self, prof_measure_t time)
 	{	
     call_tree_t* ct = get_call_tree(method);
 	  if (sleep_method(ct)) break;
-    printf("resume %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+    printf("%s::%s resume at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
     assert(ct->start_time == NULL_TIME);
     ct->start_time = time;	
 	  if (method == root || thread_root(ct)) break;
@@ -306,7 +306,7 @@ VALUE call_tree_method_start(VALUE self, VALUE klass_string, ID mid, char* file,
 	
     if (!is_recursive || ct->start_time == NULL_TIME) 
     { 
-      printf("start %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+      printf("%s::%s start at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
       ct->start_time = time;
     }
     ct->call_count++;
@@ -320,7 +320,7 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
 
     call_tree_t* ct = get_call_tree(self);
      
-    printf("stop %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+    printf("%s::%s stop at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
     if (ct->start_time != NULL_TIME && NIL_P(call_tree_find_parent(ct->parent, ct->klass, ct->mid, ct->file))) 
     {
         update_time(ct, time);
