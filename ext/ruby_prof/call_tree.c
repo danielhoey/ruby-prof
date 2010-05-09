@@ -5,6 +5,7 @@
 VALUE cCallTree;
 static ID call_tree_class_id;
 int NULL_TIME = -1;
+VALUE root;
 
 static VALUE method_name_text(ID mid)
 {
@@ -56,7 +57,8 @@ static VALUE call_tree_create(VALUE self, ID klass, ID mid, char* file)
 /* :nodoc: */
 VALUE call_tree_create_root()
 {
-    return call_tree_create(Qnil, rb_str_new2(""), rb_str_new2(""), "");
+    root = call_tree_create(Qnil, rb_str_new2(""), rb_str_new2(""), "");
+	return root;
 }
 
 
@@ -193,6 +195,14 @@ VALUE call_tree_find_parent(VALUE self, ID klass, ID mid, char* file)
 	return call_tree_find_parent(ct->parent, klass, mid, file);
 }
 
+VALUE find_thread_root(VALUE self)
+{
+	VALUE thread_new = call_tree_find_parent(current, rb_intern("[thread]"), QNil, NULL);
+	
+	if (!NIL_P(thread_new)) return thread_new;
+	else                    return root;
+	
+}
 
 VALUE call_tree_create_thread(VALUE current, char* thread_id, char* file, prof_measure_t time)
 {
@@ -200,17 +210,30 @@ VALUE call_tree_create_thread(VALUE current, char* thread_id, char* file, prof_m
     return call_tree_method_start(call_tree_parent(thread_new), rb_str_new2("[thread]"), rb_intern(thread_id), file, time);
 }
 
-void call_tree_method_pause(VALUE self, prof_measure_t time)
+void update_time(call_tree_t* ct)
 {
-	call_tree_t* ct = get_call_tree(self);
-	printf("pause %s::%s at %d\n", rb_id2name(ct->klass), rb_id2name(ct->mid), time);	
-	
 	prof_measure_t ct_time = ct->time;
     prof_measure_t start_time = ct->start_time;
     prof_measure_t diff = time - start_time;
     ct_time += diff;
     ct->time = ct_time;
 	ct->start_time = NULL_TIME;
+}
+
+int thread_root(VALUE self)
+{
+	return get_call_tree(self)->klass == rb_intern("[thread]");	
+}
+
+void call_tree_method_pause(VALUE self, prof_measure_t time)
+{
+	VALUE method = self;
+	do 
+	{	
+		call_tree_t* ct = get_call_tree(method);
+		printf("pause %s::%s at %d\n", rb_id2name(ct->klass), rb_id2name(ct->mid), time);	
+		update_time(ct);
+	} while (method != root && !thread_root(method));
 }
 
 void call_tree_method_resume(VALUE self, prof_measure_t time)
@@ -266,15 +289,10 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
     if (NIL_P(self)) { return self; }
 
     call_tree_t* ct = get_call_tree(self);
-
+printf("stop %s::%s at %d\n", rb_id2name(ct->klass), rb_id2name(ct->mid), time);	
     if (NIL_P(call_tree_find_parent(ct->parent, ct->klass, ct->mid, ct->file))) 
     {
-        prof_measure_t ct_time = ct->time;
-	    prof_measure_t start_time = ct->start_time;
-	    prof_measure_t diff = time - start_time;
-	    ct_time += diff;
-	    ct->time = ct_time;
-		ct->start_time = NULL_TIME;
+        update_time(ct);
     }
     return ct->parent;
 }

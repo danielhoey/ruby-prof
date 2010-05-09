@@ -111,22 +111,22 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 		call_tree_last_thread_id = call_tree_thread_id;
      }
 
-	  if (!NIL_P(call_tree_switched_call)) 
-	  {
+	 if (!NIL_P(call_tree_switched_call)) 
+     {
 	    printf("switch thread\n");
 		call_tree_method_pause(call_tree_current_call, now);
 		call_tree_method_resume(call_tree_switched_call, now);
 		call_tree_current_call = call_tree_switched_call;
-	  }
-	  else if (call_tree_new_thread)
-	  {
+	 }
+     else if (call_tree_new_thread)
+     {
 		printf("new thread\n");
 		call_tree_method_pause(call_tree_current_call, now);
 	    char thread_id_str[32];
 		sprintf(thread_id_str, "%2u", (unsigned int) call_tree_thread_id);
 		printf("[thread]::%s\n", thread_id_str);
 	    call_tree_current_call = call_tree_create_thread(call_tree_current_call, thread_id_str, rb_sourcefile(), now);
-	  }
+	 }
 
     prof_remove_hook();
     switch (event) {

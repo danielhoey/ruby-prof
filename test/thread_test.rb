@@ -26,12 +26,9 @@ class ThreadTest < Test::Unit::TestCase
 
     assert_equal(8, results.size)
     assert_profile_result(results[0], :klass=>"<Class::Thread>", :method=>'new', :call_count=>1)
-    assert_profile_result(results[1], :klass=>"[thread]", :call_count=>1 
-      #,:time=>0.1, 
-      )
-    assert_profile_result(results[2], :klass=>"ThreadTest", :method=>'method_b', :call_count=>1
-      #,:time=>0.2
-    )
+    assert_profile_result(results[1], :klass=>"[thread]", :call_count=>1, :time=>0.1)
+    assert_profile_result(results[1][0], :klass=>"ThreadTest", :method=>'method_a', :call_count=>1, :time=>0.1)
+    assert_profile_result(results[2], :klass=>"ThreadTest", :method=>'method_b', :call_count=>1, :time=>0.2)
     assert_profile_result(results[3], :klass=>"Thread", :method=>'join', :call_count=>1)
  end
   
