@@ -88,8 +88,8 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
     if (mid == 1) return;
 
     prof_measure_t now = get_measurement();  // Get current measurement    
-	VALUE call_tree_thread = rb_thread_current();
-	call_tree_thread_id = rb_obj_id(call_tree_thread);
+    VALUE call_tree_thread = rb_thread_current();
+    call_tree_thread_id = rb_obj_id(call_tree_thread);
 
  // Get the current thread information.
     
@@ -101,30 +101,29 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
    # endif  
 
     /* Was there a context switch? */
-	VALUE call_tree_switched_call = Qnil;
-	int call_tree_new_thread = 0;
+    VALUE call_tree_switched_call = Qnil;
+    int call_tree_new_thread = 0;
   
     if (call_tree_last_thread_id != call_tree_thread_id)  
     {
-		call_tree_switched_call = lookup_thread(call_tree_thread_id);
-		call_tree_new_thread = NIL_P(call_tree_switched_call);
-		call_tree_last_thread_id = call_tree_thread_id;
-     }
+        call_tree_switched_call = lookup_thread(call_tree_thread_id);
+        call_tree_new_thread = NIL_P(call_tree_switched_call);
+        call_tree_last_thread_id = call_tree_thread_id;
+    }
 
-	 if (!NIL_P(call_tree_switched_call)) 
-     {
-	    printf("switch thread\n");
-		call_tree_method_pause(call_tree_current_call, now);
-		call_tree_method_resume(call_tree_switched_call, now);
-		call_tree_current_call = call_tree_switched_call;
-	 }
-     else if (call_tree_new_thread)
-     {
-      call_tree_method_pause(call_tree_current_call, now);
-	    char thread_id_str[32];
-		  sprintf(thread_id_str, "%2u", (unsigned int) call_tree_thread_id);
-	    call_tree_current_call = call_tree_create_thread(call_tree_current_call, thread_id_str, rb_sourcefile(), now);
-	 }
+    if (!NIL_P(call_tree_switched_call)) 
+    {
+       call_tree_method_pause(call_tree_current_call, now);
+       call_tree_method_resume(call_tree_switched_call, now);
+       call_tree_current_call = call_tree_switched_call;
+    }
+    else if (call_tree_new_thread)
+    {
+        call_tree_method_pause(call_tree_current_call, now);
+        char thread_id_str[32];
+        sprintf(thread_id_str, "%2u", (unsigned int) call_tree_thread_id);
+        call_tree_current_call = call_tree_create_thread(call_tree_current_call, thread_id_str, rb_sourcefile(), now);
+    }
 
     prof_remove_hook();
     switch (event) {
@@ -133,7 +132,7 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
       {
           if (klass != 0 && BUILTIN_TYPE(klass) == T_ICLASS)
           {
-			  klass = RBASIC(klass)->klass;
+              klass = RBASIC(klass)->klass;
           }
 
           call_tree_current_call = call_tree_method_start(call_tree_current_call, klass_name(klass), mid, rb_sourcefile(), now);
@@ -141,7 +140,7 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
       }
       case RUBY_EVENT_RETURN:
       case RUBY_EVENT_C_RETURN:
-      {   	
+      {       
           if (call_tree_current_call != call_tree_top_level) 
           {
             call_tree_current_call = call_tree_method_stop(call_tree_current_call, now);
@@ -155,15 +154,15 @@ static void call_tree_prof_event_hook(rb_event_flag_t event, NODE* node, VALUE s
 
 static VALUE call_tree_prof_start(VALUE self)
 {
-	threads = st_init_numtable();
-	VALUE call_tree_thread = rb_thread_current();
-	call_tree_thread_id = rb_obj_id(call_tree_thread);
-	store_method_against_thread(call_tree_thread_id, call_tree_current_call);
-	call_tree_last_thread_id = call_tree_thread_id;    
+    threads = st_init_numtable();
+    VALUE call_tree_thread = rb_thread_current();
+    call_tree_thread_id = rb_obj_id(call_tree_thread);
+    store_method_against_thread(call_tree_thread_id, call_tree_current_call);
+    call_tree_last_thread_id = call_tree_thread_id;    
     call_tree_top_level = call_tree_create_root();
     prof_measure_t now = get_measurement();
     call_tree_top_level = call_tree_method_start(call_tree_top_level, rb_str_new2(""), rb_str_new2(""), "", now);
-	call_tree_current_call = call_tree_top_level;
+    call_tree_current_call = call_tree_top_level;
 }
 
 
@@ -1106,8 +1105,8 @@ update_result(prof_measure_t total_time,
 static thread_data_t *
 switch_thread(VALUE thread_id, prof_measure_t now)
 {
-	prof_frame_t *frame = NULL;
-	prof_measure_t wait_time = 0;
+    prof_frame_t *frame = NULL;
+    prof_measure_t wait_time = 0;
     /* Get new thread information. */
     thread_data_t *thread_data = threads_table_lookup(threads_tbl, thread_id);
 
@@ -1158,7 +1157,7 @@ pop_frame(thread_data_t *thread_data, prof_measure_t now)
   parent_frame = stack_peek(thread_data->stack);
   if (parent_frame)
   {
-  	parent_frame->child_time += total_time;
+      parent_frame->child_time += total_time;
   }
     
   update_result(total_time, parent_frame, frame); // only time it's called
@@ -1240,7 +1239,7 @@ prof_event_hook(rb_event_flag_t event, NODE *node, VALUE self, ID mid, VALUE kla
         const char* source_file = rb_sourcefile();
         unsigned int source_line = rb_sourceline();
 
-		char* event_name = get_event_name(event);
+        char* event_name = get_event_name(event);
 
         if (klass != 0)
           klass = (BUILTIN_TYPE(klass) == T_ICLASS ? RBASIC(klass)->klass : klass);
@@ -1262,7 +1261,7 @@ prof_event_hook(rb_event_flag_t event, NODE *node, VALUE self, ID mid, VALUE kla
        call_tree_prof_event_hook(event, node, self, mid, klass);
        return;
     }
-	
+    
     /* Special case - skip any methods from the mProf 
        module, such as Prof.stop, since they clutter
        the results but aren't important to them results. */
@@ -1382,7 +1381,7 @@ prof_event_hook(rb_event_flag_t event, NODE *node, VALUE self, ID mid, VALUE kla
     case RUBY_EVENT_RETURN:
     case RUBY_EVENT_C_RETURN:
     {      
-    	frame = pop_frame(thread_data, now);
+        frame = pop_frame(thread_data, now);
       
       # ifdef RUBY_VM
         // we need to walk up the stack to find the right one [http://redmine.ruby-lang.org/issues/show/2610] (for now)

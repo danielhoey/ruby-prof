@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require 'ruby-prof'
 
+RubyProf.call_tree_profile_on = false
 # Make sure this works with no class or method
 result = RubyProf.profile do 
   sleep 1
