@@ -221,9 +221,9 @@ void update_time(call_tree_t* ct, prof_measure_t time)
 		printf("update time %s::%s %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) ct->time);	
 }
 
-int thread_root(VALUE self)
+int thread_root(call_tree_t* ct)
 {
-	return get_call_tree(self)->klass == rb_intern("[thread]");	
+	return ct->klass == rb_intern("[thread]");	
 }
 
 int sleep_method(call_tree_t* ct)
@@ -240,9 +240,10 @@ void call_tree_method_pause(VALUE self, prof_measure_t time)
 		call_tree_t* ct = get_call_tree(method);
 	  if (sleep_method(ct)) break;
 		printf("pause %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+    if (thread_root(ct) && ct->start_time == NULL_TIME) break;
     assert(ct->start_time != NULL_TIME);
 		update_time(ct, time);
-	  if (method == root || thread_root(method)) break;
+	  if (method == root || thread_root(ct)) break;
     method = ct->parent;
 	}
   printf("pause complete\n");
@@ -259,7 +260,7 @@ void call_tree_method_resume(VALUE self, prof_measure_t time)
     printf("resume %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
     assert(ct->start_time == NULL_TIME);
     ct->start_time = time;	
-	  if (method == root || thread_root(method)) break;
+	  if (method == root || thread_root(ct)) break;
     method = ct->parent;
 	}
   printf("resume complete\n");
@@ -270,7 +271,14 @@ VALUE call_tree_method_start(VALUE self, VALUE klass_string, ID mid, char* file,
     if (NIL_P(self)) { return self; }
 	  ID klass = rb_intern(StringValuePtr(klass_string));
     if (klass == call_tree_class_id) { return self; }
-	
+
+
+    call_tree_t* parent = get_call_tree(self);
+    if (parent->start_time == NULL_TIME && thread_root(parent))
+    {
+      call_tree_method_resume(self, time);
+    }
+
 	  int is_recursive = 0;
     VALUE method_call = call_tree_find_child(self, klass, mid, file);
     if (NIL_P(method_call))
@@ -316,6 +324,12 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
     if (ct->start_time != NULL_TIME && NIL_P(call_tree_find_parent(ct->parent, ct->klass, ct->mid, ct->file))) 
     {
         update_time(ct, time);
+    }
+
+    call_tree_t* parent = get_call_tree(ct->parent);
+    if (thread_root(parent))
+    {
+      call_tree_method_pause(ct->parent, time);
     }
     return ct->parent;
 }
