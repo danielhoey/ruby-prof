@@ -197,7 +197,7 @@ VALUE call_tree_find_parent(VALUE self, ID klass, ID mid, char* file)
 
 VALUE find_thread_root(VALUE self)
 {
-	VALUE thread_new = call_tree_find_parent(current, rb_intern("[thread]"), QNil, NULL);
+	VALUE thread_new = call_tree_find_parent(self, rb_intern("[thread]"), Qnil, NULL);
 	
 	if (!NIL_P(thread_new)) return thread_new;
 	else                    return root;
@@ -210,14 +210,15 @@ VALUE call_tree_create_thread(VALUE current, char* thread_id, char* file, prof_m
     return call_tree_method_start(call_tree_parent(thread_new), rb_str_new2("[thread]"), rb_intern(thread_id), file, time);
 }
 
-void update_time(call_tree_t* ct)
+void update_time(call_tree_t* ct, prof_measure_t time)
 {
-	prof_measure_t ct_time = ct->time;
+	  prof_measure_t ct_time = ct->time;
     prof_measure_t start_time = ct->start_time;
     prof_measure_t diff = time - start_time;
     ct_time += diff;
     ct->time = ct_time;
-	ct->start_time = NULL_TIME;
+	  ct->start_time = NULL_TIME;
+		printf("update time %s::%s %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) ct->time);	
 }
 
 int thread_root(VALUE self)
@@ -225,44 +226,64 @@ int thread_root(VALUE self)
 	return get_call_tree(self)->klass == rb_intern("[thread]");	
 }
 
+int sleep_method(call_tree_t* ct)
+{
+	return match(ct, rb_intern("Kernel"), rb_intern("sleep"), NULL);
+}
+
 void call_tree_method_pause(VALUE self, prof_measure_t time)
 {
 	VALUE method = self;
-	do 
+	
+  while(1) 
 	{	
 		call_tree_t* ct = get_call_tree(method);
-		printf("pause %s::%s at %d\n", rb_id2name(ct->klass), rb_id2name(ct->mid), time);	
-		update_time(ct);
-	} while (method != root && !thread_root(method));
+	  if (sleep_method(ct)) break;
+		printf("pause %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+    assert(ct->start_time != NULL_TIME);
+		update_time(ct, time);
+	  if (method == root || thread_root(method)) break;
+    method = ct->parent;
+	}
+  printf("pause complete\n");
 }
 
 void call_tree_method_resume(VALUE self, prof_measure_t time)
 {
-	call_tree_t* ct = get_call_tree(self);
-	printf("resume %s::%s at %d\n", rb_id2name(ct->klass), rb_id2name(ct->mid), time);	
-	assert(ct->start_time == NULL_TIME);
-	ct->start_time = time;	
+	VALUE method = self;
+	
+  while(1) 
+	{	
+    call_tree_t* ct = get_call_tree(method);
+	  if (sleep_method(ct)) break;
+    printf("resume %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+    assert(ct->start_time == NULL_TIME);
+    ct->start_time = time;	
+	  if (method == root || thread_root(method)) break;
+    method = ct->parent;
+	}
+  printf("resume complete\n");
 }
 
 VALUE call_tree_method_start(VALUE self, VALUE klass_string, ID mid, char* file, prof_measure_t time)
 {
     if (NIL_P(self)) { return self; }
-	ID klass = rb_intern(StringValuePtr(klass_string));
+	  ID klass = rb_intern(StringValuePtr(klass_string));
     if (klass == call_tree_class_id) { return self; }
 	
-	int is_recursive = 0;
+	  int is_recursive = 0;
     VALUE method_call = call_tree_find_child(self, klass, mid, file);
     if (NIL_P(method_call))
     {
-	    method_call = call_tree_find_parent(self, klass, mid, file);
-	    if (NIL_P(method_call))
-	    {
+      method_call = call_tree_find_parent(self, klass, mid, file);
+      if (NIL_P(method_call))
+      {
            method_call = call_tree_add(self, klass, mid, file);
-	    }
-	    else
-	    {
-			is_recursive = 1;
-	    }
+      }
+      else
+      {
+      is_recursive = 1;
+      }
     }
     else if (NIL_P(call_tree_find_parent(self, klass, mid, file)))
     {
@@ -270,14 +291,15 @@ VALUE call_tree_method_start(VALUE self, VALUE klass_string, ID mid, char* file,
     }
 
 
-	call_tree_t* ct = get_call_tree(method_call);
+    call_tree_t* ct = get_call_tree(method_call);
 	
-	print_transition(get_call_tree(self), ct);
+    print_transition(get_call_tree(self), ct);
 	
 	
-	if (!is_recursive || ct->start_time == NULL_TIME) 
-	{ 
-		ct->start_time = time;
+    if (!is_recursive || ct->start_time == NULL_TIME) 
+    { 
+      printf("start %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+      ct->start_time = time;
     }
     ct->call_count++;
     return method_call;
@@ -289,10 +311,11 @@ VALUE call_tree_method_stop(VALUE self, prof_measure_t time)
     if (NIL_P(self)) { return self; }
 
     call_tree_t* ct = get_call_tree(self);
-printf("stop %s::%s at %d\n", rb_id2name(ct->klass), rb_id2name(ct->mid), time);	
-    if (NIL_P(call_tree_find_parent(ct->parent, ct->klass, ct->mid, ct->file))) 
+     
+    printf("stop %s::%s at %u\n", rb_id2name(ct->klass), rb_id2name(ct->mid), (unsigned int) time);	
+    if (ct->start_time != NULL_TIME && NIL_P(call_tree_find_parent(ct->parent, ct->klass, ct->mid, ct->file))) 
     {
-        update_time(ct);
+        update_time(ct, time);
     }
     return ct->parent;
 }
