@@ -34,10 +34,10 @@ FILES = FileList[
 
 # Default GEM Specification
 default_spec = Gem::Specification.new do |spec|
-  spec.name = "ruby-prof"
+  spec.name = "ruby-prof-danielhoey"
   
-  spec.homepage = "http://rubyforge.org/projects/ruby-prof/"
-  spec.summary = "Fast Ruby profiler"
+  spec.homepage = "http://github.com/danielhoey/ruby-prof"
+  spec.summary = "Fast Ruby profiler with real call trees"
   spec.description = <<-EOF
 ruby-prof is a fast code profiler for Ruby. It is a C extension and
 therefore is many times faster than the standard Ruby profiler. It
@@ -49,8 +49,8 @@ EOF
 
   spec.version = RUBY_PROF_VERSION
 
-  spec.author = "Shugo Maeda, Charlie Savage, Roger Pack"
-  spec.email = "shugo@ruby-lang.org, cfis@savagexi.com, rogerdpack@gmail.com"
+  spec.author = "Shugo Maeda, Charlie Savage, Roger Pack, Daniel Hoey"
+  spec.email = "danielhoey1@gmail.com"
   spec.platform = Gem::Platform::RUBY
   spec.require_path = "lib" 
   spec.bindir = "bin"
