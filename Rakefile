@@ -29,7 +29,7 @@ FILES = FileList[
   'ext/vc/*.vcproj',
   'lib/**/*',
   'rails/**/*',
-  'test/*'
+  'test/**/*'
 ]
 
 # Default GEM Specification
